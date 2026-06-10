@@ -1,0 +1,25 @@
+[package]
+name = "repomix-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "repomix"
+path = "src/main.rs"
+
+[dependencies]
+repomix-core = { path = "../core" }
+repomix-config = { path = "../config" }
+repomix-shared = { path = "../shared" }
+repomix-mcp = { path = "../mcp" }
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+indicatif = "0.17"
+dirs = "5.0"
+arboard = "3.3"
+serde_json = "1.0"
+dialoguer = "0.11"
+console = "0.15"

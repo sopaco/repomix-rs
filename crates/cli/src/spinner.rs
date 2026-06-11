@@ -68,7 +68,9 @@ impl ProgressBar2 {
         let pb = ProgressBar::new(total);
         pb.set_style(
             ProgressStyle::default_bar()
-                .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+                .template(
+                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
+                )
                 .unwrap()
                 .progress_chars("=>-"),
         );

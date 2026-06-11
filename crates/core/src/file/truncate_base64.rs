@@ -2,7 +2,7 @@
 pub fn truncate_base64(content: &str) -> String {
     let lines: Vec<&str> = content.lines().collect();
     let mut result: Vec<String> = Vec::with_capacity(lines.len());
-    
+
     for line in lines {
         if is_base64_line(line) {
             // 截断base64数据，只保留前100个字符（使用 char 边界安全截断）
@@ -17,7 +17,7 @@ pub fn truncate_base64(content: &str) -> String {
             result.push(line.to_string());
         }
     }
-    
+
     result.join("\n")
 }
 
@@ -34,9 +34,10 @@ fn is_base64_line(line: &str) -> bool {
         return false;
     }
 
-    if !line.chars().all(|c| {
-        c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '='
-    }) {
+    if !line
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '=')
+    {
         return false;
     }
 
@@ -71,7 +72,10 @@ mod tests {
     fn test_natural_language_long_sentence_not_base64() {
         // 长自然语言句子：含标点结尾
         let s = "The Quick Brown Fox Jumps Over The Lazy Dog And Runs Into The Forest Which Is Located Near A Beautiful River";
-        assert!(!is_base64_line(s), "natural language with . should not be base64");
+        assert!(
+            !is_base64_line(s),
+            "natural language with . should not be base64"
+        );
     }
 
     #[test]

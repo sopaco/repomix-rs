@@ -1,9 +1,9 @@
 use std::path::Path;
 
-use repomix_config::schema::RepomixConfig;
-use repomix_shared::types::ProcessedFile;
 use crate::output::decorate::{OutputHeader, format_header};
 use crate::path_util::display_path;
+use repomix_config::schema::RepomixConfig;
+use repomix_shared::types::ProcessedFile;
 
 /// 对插入 XML 属性 / Markdown / Plain 的路径进行转义
 fn xml_attr_escape(s: &str) -> String {
@@ -35,6 +35,7 @@ pub struct XmlSplitMeta {
 /// `split_meta == None` 时行为与历史 `generate_xml` 一致（git 段落始终输出）。
 /// 分片模式下：`file_summary` / 自定义 header 仅出现在第一片；`git_*` 与
 /// `token_count_tree` 仅出现在最后一片；中间片带 `<split_info>` 标记。
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn render_xml_part(
     files: &[ProcessedFile],
     config: &RepomixConfig,
@@ -51,17 +52,17 @@ pub(crate) fn render_xml_part(
     let is_first = split_meta.map(|m| m.is_first_part).unwrap_or(true);
     let is_last = split_meta.map(|m| m.is_last_part).unwrap_or(true);
 
-    if let Some(meta) = split_meta {
-        if !meta.is_first_part {
-            output.push_str(&format!(
-                "<split_info part=\"{}\" total_parts=\"{}\">\n",
-                meta.part, meta.total_parts
-            ));
-            output.push_str(
-                "Continuation of a split repomix output. Earlier parts contain preceding files.\n",
-            );
-            output.push_str("</split_info>\n\n");
-        }
+    if let Some(meta) = split_meta
+        && !meta.is_first_part
+    {
+        output.push_str(&format!(
+            "<split_info part=\"{}\" total_parts=\"{}\">\n",
+            meta.part, meta.total_parts
+        ));
+        output.push_str(
+            "Continuation of a split repomix output. Earlier parts contain preceding files.\n",
+        );
+        output.push_str("</split_info>\n\n");
     }
 
     // 头部信息
@@ -121,28 +122,28 @@ pub(crate) fn render_xml_part(
 
     // Git Diff / Log（分片时仅最后一片携带）
     if is_last {
-        if let Some(ref diff) = git_diff_content {
-            if !diff.is_empty() {
-                output.push_str("\n<git_diff>\n");
-                output.push_str(diff);
-                output.push_str("\n</git_diff>\n");
-            }
+        if let Some(diff) = git_diff_content
+            && !diff.is_empty()
+        {
+            output.push_str("\n<git_diff>\n");
+            output.push_str(diff);
+            output.push_str("\n</git_diff>\n");
         }
 
-        if let Some(ref log) = git_log_content {
-            if !log.is_empty() {
-                output.push_str("\n<git_log>\n");
-                output.push_str(log);
-                output.push_str("\n</git_log>\n");
-            }
+        if let Some(log) = git_log_content
+            && !log.is_empty()
+        {
+            output.push_str("\n<git_log>\n");
+            output.push_str(log);
+            output.push_str("\n</git_log>\n");
         }
 
-        if let Some(tree) = token_count_tree {
-            if !tree.is_empty() {
-                output.push_str("\n<token_count_tree>\n");
-                output.push_str(tree);
-                output.push_str("\n</token_count_tree>\n");
-            }
+        if let Some(tree) = token_count_tree
+            && !tree.is_empty()
+        {
+            output.push_str("\n<token_count_tree>\n");
+            output.push_str(tree);
+            output.push_str("\n</token_count_tree>\n");
         }
     }
 

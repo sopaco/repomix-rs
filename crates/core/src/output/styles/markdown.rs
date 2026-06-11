@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use repomix_config::schema::RepomixConfig;
-use repomix_shared::types::ProcessedFile;
 use crate::output::decorate::{OutputHeader, format_header};
 use crate::path_util::display_path;
+use repomix_config::schema::RepomixConfig;
+use repomix_shared::types::ProcessedFile;
 
 /// 根据内容中最长连续反引号 run 选择 fence 长度，避免 `` ``` `` 提前闭合代码块。
 fn wrap_markdown_code_block(content: &str) -> String {
@@ -27,6 +27,7 @@ fn wrap_markdown_code_block(content: &str) -> String {
 }
 
 /// 生成Markdown格式输出
+#[allow(clippy::too_many_arguments)]
 pub fn generate_markdown(
     files: &[ProcessedFile],
     config: &RepomixConfig,
@@ -87,23 +88,23 @@ pub fn generate_markdown(
     }
 
     // Git Diff
-    if let Some(ref diff) = git_diff_content {
-        if !diff.is_empty() {
-            output.push_str("## Git Diff\n\n");
-            output.push_str("```diff\n");
-            output.push_str(diff);
-            output.push_str("\n```\n\n");
-        }
+    if let Some(diff) = git_diff_content
+        && !diff.is_empty()
+    {
+        output.push_str("## Git Diff\n\n");
+        output.push_str("```diff\n");
+        output.push_str(diff);
+        output.push_str("\n```\n\n");
     }
 
     // Git Log
-    if let Some(ref log) = git_log_content {
-        if !log.is_empty() {
-            output.push_str("## Git Log\n\n");
-            output.push_str("```\n");
-            output.push_str(log);
-            output.push_str("\n```\n\n");
-        }
+    if let Some(log) = git_log_content
+        && !log.is_empty()
+    {
+        output.push_str("## Git Log\n\n");
+        output.push_str("```\n");
+        output.push_str(log);
+        output.push_str("\n```\n\n");
     }
 
     output

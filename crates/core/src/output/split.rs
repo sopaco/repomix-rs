@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use repomix_config::schema::{RepomixConfig, OutputStyle};
+use repomix_config::schema::{OutputStyle, RepomixConfig};
 use repomix_shared::types::ProcessedFile;
 
-use crate::metrics::token_count::{estimate_tokens_fallback, TokenCounter};
+use crate::metrics::token_count::{TokenCounter, estimate_tokens_fallback};
 use crate::output::decorate::OutputHeader;
-use crate::output::styles::xml::{render_xml_part, XmlSplitMeta};
+use crate::output::styles::xml::{XmlSplitMeta, render_xml_part};
 
 /// 按 **token 数**（非字节）分割已渲染的文本输出。
 ///
@@ -90,6 +90,7 @@ pub fn split_output(
 }
 
 /// 按文件边界将 XML 输出拆成多片，每片均为结构完整的 XML（含闭合的 `<files>`）。
+#[allow(clippy::too_many_arguments)]
 pub fn split_xml_by_files(
     files: &[ProcessedFile],
     config: &RepomixConfig,
@@ -352,8 +353,8 @@ mod tests {
             .join("\n");
         let result = split_output(&content, 50, &OutputStyle::Json, TEST_ENCODING);
         assert_eq!(result.len(), 1);
-        let parsed: serde_json::Value = serde_json::from_str(&result[0])
-            .expect("split_output JSON 风格必须输出合法 JSON");
+        let parsed: serde_json::Value =
+            serde_json::from_str(&result[0]).expect("split_output JSON 风格必须输出合法 JSON");
         assert!(parsed.is_array());
         assert!(parsed.as_array().unwrap().len() > 1);
     }

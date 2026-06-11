@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use repomix_config::schema::RepomixConfig;
 use repomix_shared::types::ProcessedFile;
+use std::collections::HashMap;
 
 /// 指标结果
 pub struct MetricsResult {

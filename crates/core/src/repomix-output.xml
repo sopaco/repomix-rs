@@ -21,22 +21,22 @@ lib.rs
 
 <files>
 <file path="lib.rs">
-pub mod packager;
 pub mod file;
-pub mod security;
-pub mod output;
-pub mod metrics;
 pub mod git;
-pub mod tree_sitter;
+pub mod metrics;
+pub mod output;
+pub mod packager;
 pub mod path_util;
+pub mod security;
+pub mod tree_sitter;
 
 
 pub use repomix_config as config;
 
 
-pub use packager::{pack, PackResult, PackOptions, NoopProgress, ProgressCallback};
-pub use repomix_config::schema::{RepomixConfig, OutputStyle};
+pub use packager::{NoopProgress, PackOptions, PackResult, ProgressCallback, pack};
 pub use repomix_config::load::PartialConfig;
+pub use repomix_config::schema::{OutputStyle, RepomixConfig};
 pub use repomix_shared::types::*;
 
 

@@ -1,10 +1,10 @@
 use std::path::Path;
 
+use crate::output::decorate::{OutputHeader, format_header};
+use crate::path_util::display_path;
 use repomix_config::schema::RepomixConfig;
 use repomix_shared::types::ProcessedFile;
 use serde::{Deserialize, Serialize};
-use crate::output::decorate::{OutputHeader, format_header};
-use crate::path_util::display_path;
 
 /// JSON输出结构
 #[derive(Serialize, Deserialize)]
@@ -38,6 +38,7 @@ struct JsonFile {
 }
 
 /// 生成JSON格式输出
+#[allow(clippy::too_many_arguments)]
 pub fn generate_json(
     files: &[ProcessedFile],
     config: &RepomixConfig,
@@ -91,8 +92,12 @@ pub fn generate_json(
         custom_instructions,
         directory_structure,
         files: json_files,
-        git_diff: git_diff_content.as_ref().and_then(|d| if d.is_empty() { None } else { Some(d.clone()) }),
-        git_log: git_log_content.as_ref().and_then(|l| if l.is_empty() { None } else { Some(l.clone()) }),
+        git_diff: git_diff_content
+            .as_ref()
+            .and_then(|d| if d.is_empty() { None } else { Some(d.clone()) }),
+        git_log: git_log_content
+            .as_ref()
+            .and_then(|l| if l.is_empty() { None } else { Some(l.clone()) }),
         token_count_tree: token_count_tree.map(|t| t.to_string()),
     };
 

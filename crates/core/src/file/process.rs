@@ -1,20 +1,17 @@
+use crate::file::manipulate::add_line_numbers;
+use crate::file::manipulate::remove_comments;
+use crate::file::manipulate::remove_empty_lines;
+use crate::file::manipulate::trim_content;
+use crate::file::process_content::ProcessContentOptions;
+use crate::file::truncate_base64::truncate_base64;
+use crate::metrics::token_count::TokenCounter;
 use anyhow::Result;
 use rayon::prelude::*;
 use repomix_config::schema::RepomixConfig;
 use repomix_shared::types::*;
-use crate::file::process_content::ProcessContentOptions;
-use crate::file::truncate_base64::truncate_base64;
-use crate::file::manipulate::remove_comments;
-use crate::file::manipulate::remove_empty_lines;
-use crate::file::manipulate::trim_content;
-use crate::file::manipulate::add_line_numbers;
-use crate::metrics::token_count::TokenCounter;
 
 /// 处理文件内容
-pub fn process_files(
-    raw_files: &[RawFile],
-    config: &RepomixConfig,
-) -> Result<Vec<ProcessedFile>> {
+pub fn process_files(raw_files: &[RawFile], config: &RepomixConfig) -> Result<Vec<ProcessedFile>> {
     let options = ProcessContentOptions::from_config(config);
 
     // 创建 token 计数器；初始化失败时降级到空白分隔估算并打印 warning。
@@ -25,7 +22,8 @@ pub fn process_files(
                 "Failed to initialize token counter for encoding '{}': {}. \
                  Falling back to whitespace-based estimate, which severely underestimates \
                  CJK (Chinese/Japanese/Korean) text. Top-N file ranking may be unreliable.",
-                config.token_count.encoding, e
+                config.token_count.encoding,
+                e
             );
             None
         }
@@ -34,16 +32,18 @@ pub fn process_files(
     // 并行处理文件
     let processed: Vec<ProcessedFile> = raw_files
         .par_iter()
-        .map(|raw_file| {
-            process_single_file(raw_file, &options, token_counter.as_ref())
-        })
+        .map(|raw_file| process_single_file(raw_file, &options, token_counter.as_ref()))
         .collect();
 
     Ok(processed)
 }
 
 /// 处理单个文件
-fn process_single_file(raw_file: &RawFile, options: &ProcessContentOptions, token_counter: Option<&TokenCounter>) -> ProcessedFile {
+fn process_single_file(
+    raw_file: &RawFile,
+    options: &ProcessContentOptions,
+    token_counter: Option<&TokenCounter>,
+) -> ProcessedFile {
     // 检查是否需要任何变换，避免不必要的 clone
     let needs_transform = options.remove_comments
         || options.compress
@@ -68,18 +68,19 @@ fn process_single_file(raw_file: &RawFile, options: &ProcessContentOptions, toke
         content = remove_comments(&content, &raw_file.path);
     }
 
-    if options.compress {
-        if let Some(lang_config) = crate::tree_sitter::languages::get_language_config(&raw_file.path) {
-            match crate::tree_sitter::compress::compress_file(&content, &raw_file.path, lang_config) {
-                Ok(Some(compressed)) => content = compressed,
-                Ok(None) => {}
-                Err(e) => {
-                    tracing::warn!(
-                        "Tree-sitter compression failed for {}: {}. Using original content.",
-                        raw_file.path.display(),
-                        e
-                    );
-                }
+    if options.compress
+        && let Some(lang_config) =
+            crate::tree_sitter::languages::get_language_config(&raw_file.path)
+    {
+        match crate::tree_sitter::compress::compress_file(&content, &raw_file.path, lang_config) {
+            Ok(Some(compressed)) => content = compressed,
+            Ok(None) => {}
+            Err(e) => {
+                tracing::warn!(
+                    "Tree-sitter compression failed for {}: {}. Using original content.",
+                    raw_file.path.display(),
+                    e
+                );
             }
         }
     }

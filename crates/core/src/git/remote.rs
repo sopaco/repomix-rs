@@ -1,17 +1,17 @@
+use anyhow::Result;
 use std::path::Path;
 use std::process::Command;
-use anyhow::Result;
 
 /// 克隆远程仓库
 pub fn clone_remote_repo(url: &str, target_dir: &Path) -> Result<()> {
     let status = Command::new("git")
         .args(["clone", url, target_dir.to_str().unwrap()])
         .status()?;
-    
+
     if !status.success() {
         anyhow::bail!("Failed to clone repository: {}", url);
     }
-    
+
     Ok(())
 }
 

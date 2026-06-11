@@ -9,12 +9,15 @@ use rmcp::model::{
     ServerInfo,
 };
 use rmcp::schemars;
-use rmcp::{tool, tool_handler, tool_router, ServerHandler};
+use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-use repomix_config::schema::{OutputStyle, RepomixConfig};
-use repomix_core::packager::{pack, NoopProgress, PackResult};
+use repomix_config::schema::RepomixConfig;
+use repomix_core::packager::{NoopProgress, PackResult, pack};
+
+use crate::helpers::{parse_style, split_csv, validate_remote_url};
+use crate::output_path::{make_mcp_output_path, validate_mcp_output_path};
 
 // ===== Result / metrics structs =====
 
@@ -105,69 +108,15 @@ pub struct GrepRepomixOutputParams {
 
 // ===== helpers =====
 
-/// 解析输出风格；未知值返回 `invalid_params` 错误，空值默认 XML。
-fn parse_style(s: Option<&str>) -> Result<OutputStyle, ErrorData> {
-    match s {
-        None | Some("") | Some("xml") => Ok(OutputStyle::Xml),
-        Some("markdown") => Ok(OutputStyle::Markdown),
-        Some("plain") => Ok(OutputStyle::Plain),
-        Some("json") => Ok(OutputStyle::Json),
-        Some(other) => Err(ErrorData::invalid_params(
-            format!(
-                "invalid style '{}': expected one of xml, markdown, plain, json",
-                other
-            ),
-            None,
-        )),
-    }
-}
-
-/// 验证远程仓库 URL 的基本合法性。
-fn validate_remote_url(url: &str) -> Result<(), ErrorData> {
-    let trimmed = url.trim();
-    if trimmed.is_empty() {
-        return Err(ErrorData::invalid_params(
-            "remote url is empty",
-            None,
-        ));
-    }
-    // 支持 https://, http://, git://, ssh (user@host:path) 协议
-    let ok = trimmed.starts_with("https://")
-        || trimmed.starts_with("http://")
-        || trimmed.starts_with("git://")
-        || trimmed.starts_with("ssh://")
-        || (trimmed.contains('@') && trimmed.contains(':') && !trimmed.contains(' '));
-    if !ok {
-        return Err(ErrorData::invalid_params(
-            format!(
-                "remote url '{}' is not a recognized git url \
-                 (expected https://, http://, git://, ssh:// or user@host:path)",
-                trimmed
-            ),
-            None,
-        ));
-    }
-    Ok(())
-}
-
-fn split_csv(s: Option<&str>) -> Vec<String> {
-    s.map(|v| {
-        v.split(',')
-            .map(|p| p.trim().to_string())
-            .filter(|p| !p.is_empty())
-            .collect()
-    })
-    .unwrap_or_default()
-}
-
 /// 与 CLI 一致：从 CWD 加载分层配置，再应用 MCP 工具参数。
-fn load_mcp_config(partial: repomix_config::load::PartialConfig) -> Result<RepomixConfig, ErrorData> {
+fn load_mcp_config(
+    partial: repomix_config::load::PartialConfig,
+) -> Result<RepomixConfig, ErrorData> {
     let config_root = std::env::current_dir().map_err(|e| {
         ErrorData::internal_error(format!("cannot resolve config root: {}", e), None)
     })?;
-    RepomixConfig::load(Some(partial), &config_root).map_err(|e| {
-        ErrorData::internal_error(format!("load config: {}", e), None)
-    })
+    RepomixConfig::load(Some(partial), &config_root)
+        .map_err(|e| ErrorData::internal_error(format!("load config: {}", e), None))
 }
 
 /// 创建唯一临时目录（PID + 时间戳 + 随机后缀）
@@ -218,45 +167,13 @@ impl Drop for TempDirGuard {
     }
 }
 
-fn style_extension(s: &OutputStyle) -> &'static str {
-    match s {
-        OutputStyle::Xml => "xml",
-        OutputStyle::Markdown => "md",
-        OutputStyle::Json => "json",
-        OutputStyle::Plain => "txt",
-    }
-}
-
-/// 在 `~/.repomix/outputs/` 下创建唯一输出路径，供 MCP 持久化写入。
-fn make_mcp_output_path(style: &OutputStyle) -> Result<PathBuf, ErrorData> {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    let dir = repomix_config::global_dir::mcp_outputs_dir().map_err(|e| {
-        ErrorData::internal_error(format!("create mcp outputs dir: {}", e), None)
-    })?;
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    Ok(dir.join(format!(
-        "pack_{}_{}.{}",
-        std::process::id(),
-        nanos,
-        style_extension(style)
-    )))
-}
-
-fn pack_tool_result(result: &PackResult, description: &str) -> PackToolResult {
+fn pack_tool_result(result: &PackResult, output_id: &str, description: &str) -> PackToolResult {
     PackToolResult {
         description: description.to_string(),
         result: serde_json::to_string_pretty(&PackMetrics::from(result)).unwrap_or_default(),
         directory_structure: result.directory_structure.clone(),
-        output_id: "packed_output".to_string(),
-        output_file_path: result
-            .output_paths
-            .first()
-            .cloned()
-            .unwrap_or_default(),
+        output_id: output_id.to_string(),
+        output_file_path: result.output_paths.first().cloned().unwrap_or_default(),
         total_files: result.total_files,
         total_tokens: result.total_tokens,
     }
@@ -322,8 +239,8 @@ impl RepomixMcpServer {
         };
         let mut config = load_mcp_config(partial)?;
 
-        let output_path = make_mcp_output_path(&config.output.style)?;
-        config.output.file_path = output_path.to_string_lossy().to_string();
+        let mcp_output = make_mcp_output_path(&config.output.style)?;
+        config.output.file_path = mcp_output.path.to_string_lossy().to_string();
 
         let result = pack(vec![root_dir], config, Box::new(NoopProgress))
             .await
@@ -331,6 +248,7 @@ impl RepomixMcpServer {
 
         let tool_result = pack_tool_result(
             &result,
+            &mcp_output.output_id,
             &format!(
                 "Successfully packed {} files ({} tokens) from repository",
                 result.total_files, result.total_tokens
@@ -363,8 +281,8 @@ impl RepomixMcpServer {
             ..Default::default()
         };
         let mut config = load_mcp_config(partial)?;
-        let output_path = make_mcp_output_path(&config.output.style)?;
-        config.output.file_path = output_path.to_string_lossy().to_string();
+        let mcp_output = make_mcp_output_path(&config.output.style)?;
+        config.output.file_path = mcp_output.path.to_string_lossy().to_string();
 
         let result = pack(vec![temp_dir.clone()], config, Box::new(NoopProgress))
             .await
@@ -372,6 +290,7 @@ impl RepomixMcpServer {
 
         let tool_result = pack_tool_result(
             &result,
+            &mcp_output.output_id,
             &format!(
                 "Successfully packed {} files ({} tokens) from remote repository",
                 result.total_files, result.total_tokens
@@ -388,7 +307,10 @@ impl RepomixMcpServer {
         &self,
         Parameters(p): Parameters<ReadRepomixOutputParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        let content = std::fs::read_to_string(&p.file_path)
+        let path = validate_mcp_output_path(&p.file_path)?;
+        let content = tokio::task::spawn_blocking(move || std::fs::read_to_string(path))
+            .await
+            .map_err(|e| ErrorData::internal_error(format!("read task failed: {}", e), None))?
             .map_err(|e| ErrorData::internal_error(format!("read failed: {}", e), None))?;
         Ok(CallToolResult::success(vec![Content::text(content)]))
     }
@@ -401,39 +323,48 @@ impl RepomixMcpServer {
         &self,
         Parameters(p): Parameters<GrepRepomixOutputParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        let content = std::fs::read_to_string(&p.file_path)
-            .map_err(|e| ErrorData::internal_error(format!("read failed: {}", e), None))?;
+        let path = validate_mcp_output_path(&p.file_path)?;
         let regex = regex::Regex::new(&p.pattern)
             .map_err(|e| ErrorData::invalid_params(format!("invalid regex: {}", e), None))?;
-
+        let pattern = p.pattern.clone();
         let context = p.context.unwrap_or(0);
-        let lines: Vec<&str> = content.lines().collect();
-        let mut matches: Vec<serde_json::Value> = Vec::new();
+        let file_display = p.file_path.clone();
 
-        for (i, line) in lines.iter().enumerate() {
-            if regex.is_match(line) {
-                let mut entry = serde_json::Map::new();
-                entry.insert("line_number".into(), serde_json::json!(i + 1));
-                entry.insert("text".into(), serde_json::json!(line));
-                if context > 0 {
-                    let start = i.saturating_sub(context);
-                    let end = (i + context + 1).min(lines.len());
-                    entry.insert(
-                        "context_before".into(),
-                        serde_json::json!(lines[start..i].join("\n")),
-                    );
-                    entry.insert(
-                        "context_after".into(),
-                        serde_json::json!(lines[i + 1..end].join("\n")),
-                    );
+        let matches = tokio::task::spawn_blocking(move || {
+            let content =
+                std::fs::read_to_string(&path).map_err(|e| format!("read failed: {}", e))?;
+            let lines: Vec<&str> = content.lines().collect();
+            let mut matches: Vec<serde_json::Value> = Vec::new();
+
+            for (i, line) in lines.iter().enumerate() {
+                if regex.is_match(line) {
+                    let mut entry = serde_json::Map::new();
+                    entry.insert("line_number".into(), serde_json::json!(i + 1));
+                    entry.insert("text".into(), serde_json::json!(line));
+                    if context > 0 {
+                        let start = i.saturating_sub(context);
+                        let end = (i + context + 1).min(lines.len());
+                        entry.insert(
+                            "context_before".into(),
+                            serde_json::json!(lines[start..i].join("\n")),
+                        );
+                        entry.insert(
+                            "context_after".into(),
+                            serde_json::json!(lines[i + 1..end].join("\n")),
+                        );
+                    }
+                    matches.push(serde_json::Value::Object(entry));
                 }
-                matches.push(serde_json::Value::Object(entry));
             }
-        }
 
+            Ok::<_, String>(matches)
+        })
+        .await
+        .map_err(|e| ErrorData::internal_error(format!("grep task failed: {}", e), None))?
+        .map_err(|e| ErrorData::internal_error(e, None))?;
         ok_result(serde_json::json!({
-            "file": p.file_path,
-            "pattern": p.pattern,
+            "file": file_display,
+            "pattern": pattern,
             "match_count": matches.len(),
             "matches": matches,
         }))
@@ -455,8 +386,8 @@ impl ServerHandler for RepomixMcpServer {
 
 /// 真正以 MCP 协议启动 stdio 服务器
 pub async fn run_stdio_server() -> Result<()> {
-    use rmcp::transport::stdio;
     use rmcp::ServiceExt;
+    use rmcp::transport::stdio;
 
     let server = RepomixMcpServer::new();
     let service = server

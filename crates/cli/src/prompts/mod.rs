@@ -1,6 +1,6 @@
 use console::style;
 use dialoguer::{Confirm, Select};
-use repomix_config::schema::{RepomixConfig, OutputStyle};
+use repomix_config::schema::{OutputStyle, RepomixConfig};
 use std::fs;
 use std::path::Path;
 
@@ -91,10 +91,7 @@ pub fn create_config_file(root_dir: &Path) -> bool {
             .unwrap_or(false);
 
         if !overwrite {
-            println!(
-                "{}",
-                style("Skipping repomix.config.json creation.").dim()
-            );
+            println!("{}", style("Skipping repomix.config.json creation.").dim());
             return false;
         }
     }
@@ -112,7 +109,11 @@ pub fn create_config_file(root_dir: &Path) -> bool {
             true
         }
         Err(e) => {
-            println!("{} Failed to create config file: {}", style("Error:").red(), e);
+            println!(
+                "{} Failed to create config file: {}",
+                style("Error:").red(),
+                e
+            );
             false
         }
     }
@@ -247,8 +248,10 @@ pub fn run_init_action(root_dir: &Path, is_global: bool) {
         } else {
             println!(
                 "{}",
-                style("Initialization complete! You can now use Repomix with your specified settings.")
-                    .green()
+                style(
+                    "Initialization complete! You can now use Repomix with your specified settings."
+                )
+                .green()
             );
         }
     }

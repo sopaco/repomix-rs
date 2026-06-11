@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use repomix_config::schema::RepomixConfig;
-use repomix_shared::types::ProcessedFile;
 use crate::output::decorate::{OutputHeader, format_header};
 use crate::path_util::display_path;
+use repomix_config::schema::RepomixConfig;
+use repomix_shared::types::ProcessedFile;
 
 /// 生成纯文本格式输出
+#[allow(clippy::too_many_arguments)]
 pub fn generate_plain(
     files: &[ProcessedFile],
     config: &RepomixConfig,
@@ -18,7 +19,7 @@ pub fn generate_plain(
     git_log_content: &Option<String>,
 ) -> String {
     let mut output = String::new();
-    
+
     // 头部信息
     output.push_str("Repository Packed for AI Analysis\n");
     output.push_str("====================================\n\n");
@@ -31,7 +32,7 @@ pub fn generate_plain(
         output.push_str(&header_text);
         output.push_str("\n\n");
     }
-    
+
     // 目录结构
     if config.output.directory_structure && !tree_string.is_empty() {
         output.push_str("Directory Structure\n");
@@ -39,7 +40,7 @@ pub fn generate_plain(
         output.push_str(tree_string);
         output.push_str("\n\n");
     }
-    
+
     // 文件内容
     if config.output.files {
         output.push_str("Files\n");
@@ -49,7 +50,10 @@ pub fn generate_plain(
             let path_safe = path_str.replace(['\n', '\r', '\t'], " ");
             let line_count = line_counts.get(&path_str).unwrap_or(&0);
             if config.output.parsable_style {
-                output.push_str(&format!("======== FILE: {} ({} lines, {} tokens) ========\n", path_safe, line_count, file.token_count));
+                output.push_str(&format!(
+                    "======== FILE: {} ({} lines, {} tokens) ========\n",
+                    path_safe, line_count, file.token_count
+                ));
             } else {
                 output.push_str(&format!("File: {} ({} lines)\n", path_safe, line_count));
                 output.push_str(&"-".repeat(40));
@@ -59,26 +63,26 @@ pub fn generate_plain(
             output.push_str("\n\n");
         }
     }
-    
+
     // Git Diff
-    if let Some(ref diff) = git_diff_content {
-        if !diff.is_empty() {
-            output.push_str("Git Diff\n");
-            output.push_str("--------\n");
-            output.push_str(diff);
-            output.push_str("\n\n");
-        }
+    if let Some(diff) = git_diff_content
+        && !diff.is_empty()
+    {
+        output.push_str("Git Diff\n");
+        output.push_str("--------\n");
+        output.push_str(diff);
+        output.push_str("\n\n");
     }
-    
+
     // Git Log
-    if let Some(ref log) = git_log_content {
-        if !log.is_empty() {
-            output.push_str("Git Log\n");
-            output.push_str("-------\n");
-            output.push_str(log);
-            output.push_str("\n\n");
-        }
+    if let Some(log) = git_log_content
+        && !log.is_empty()
+    {
+        output.push_str("Git Log\n");
+        output.push_str("-------\n");
+        output.push_str(log);
+        output.push_str("\n\n");
     }
-    
+
     output
 }

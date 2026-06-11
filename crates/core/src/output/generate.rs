@@ -1,13 +1,15 @@
 use std::path::Path;
 
-use anyhow::Result;
-use repomix_config::schema::{RepomixConfig, OutputStyle};
-use repomix_shared::types::ProcessedFile;
-use crate::path_util::display_path;
-use crate::output::styles::{xml, markdown, plain, json};
+use crate::file::tree_generate::{
+    calculate_file_line_counts, generate_tree_string, generate_tree_string_with_line_counts,
+};
 use crate::output::decorate::collect_header;
 use crate::output::split;
-use crate::file::tree_generate::{generate_tree_string, generate_tree_string_with_line_counts, calculate_file_line_counts};
+use crate::output::styles::{json, markdown, plain, xml};
+use crate::path_util::display_path;
+use anyhow::Result;
+use repomix_config::schema::{OutputStyle, RepomixConfig};
+use repomix_shared::types::ProcessedFile;
 
 /// 输出结果
 pub struct OutputResult {
@@ -30,13 +32,13 @@ pub fn produce_output(
 ) -> Result<OutputResult> {
     // 收集头部信息（不再修改文件内容）
     let header = collect_header(config);
-    
+
     // 生成相对 pack 根目录的文件路径列表
     let file_paths: Vec<String> = files
         .iter()
         .map(|f| display_path(&f.path, pack_root))
         .collect();
-    
+
     // 生成目录树
     let tree_string = if config.output.directory_structure {
         let empty_dirs: Vec<String> = if config.output.include_full_directory_structure {
@@ -51,11 +53,11 @@ pub fn produce_output(
     } else {
         String::new()
     };
-    
+
     // 计算文件行数
     let contents: Vec<String> = files.iter().map(|f| f.content.clone()).collect();
     let line_counts = calculate_file_line_counts(&file_paths, &contents);
-    
+
     // 根据风格生成输出
     // Token 计数树（JSON 输出需要在生成前准备好，以便嵌入到 JSON 结构中）
     let token_tree = if config.output.token_count_tree.show_tree {
@@ -130,11 +132,10 @@ pub fn produce_output(
                     ),
                     OutputStyle::Xml => unreachable!(),
                 };
-                if let Some(ref tree) = token_tree {
-                    if config.output.style != OutputStyle::Json {
-                        output_content
-                            .push_str(&format_token_count_tree(tree, &config.output.style));
-                    }
+                if let Some(tree) = &token_tree
+                    && config.output.style != OutputStyle::Json
+                {
+                    output_content.push_str(&format_token_count_tree(tree, &config.output.style));
                 }
                 split::split_output(
                     &output_content,
@@ -186,10 +187,10 @@ pub fn produce_output(
                 token_tree.as_deref(),
             ),
         };
-        if let Some(ref tree) = token_tree {
-            if config.output.style != OutputStyle::Json {
-                output_content.push_str(&format_token_count_tree(tree, &config.output.style));
-            }
+        if let Some(tree) = &token_tree
+            && config.output.style != OutputStyle::Json
+        {
+            output_content.push_str(&format_token_count_tree(tree, &config.output.style));
         }
         vec![output_content]
     };
@@ -206,20 +207,19 @@ pub fn produce_output(
         std::fs::write(&output_path, content)?;
         written_paths.push(output_path);
     }
-    
+
     // 复制到剪贴板
-    if config.output.copy_to_clipboard {
-        if let Some(content) = output_contents.first() {
-            if let Err(e) = copy_to_clipboard(content) {
-                tracing::warn!(
-                    "Failed to copy to clipboard ({}). Pack succeeded but clipboard was not set. \
+    if config.output.copy_to_clipboard
+        && let Some(content) = output_contents.first()
+        && let Err(e) = copy_to_clipboard(content)
+    {
+        tracing::warn!(
+            "Failed to copy to clipboard ({}). Pack succeeded but clipboard was not set. \
                      This is expected in headless/SSH/CI environments.",
-                    e
-                );
-            }
-        }
+            e
+        );
     }
-    
+
     Ok(OutputResult {
         written_paths,
         contents: output_contents,

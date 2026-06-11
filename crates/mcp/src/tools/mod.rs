@@ -12,9 +12,18 @@ pub const TOOL_GREP_OUTPUT: &str = "grep_repomix_output";
 /// 获取所有工具 (name, description) 元数据
 pub fn get_tool_definitions() -> Vec<(&'static str, &'static str)> {
     vec![
-        (TOOL_PACK_CODEBASE, "Pack a local directory into AI-friendly format"),
+        (
+            TOOL_PACK_CODEBASE,
+            "Pack a local directory into AI-friendly format",
+        ),
         (TOOL_PACK_REMOTE, "Clone and pack a remote git repository"),
-        (TOOL_READ_OUTPUT, "Read the contents of a repomix output file"),
-        (TOOL_GREP_OUTPUT, "Search a repomix output file using a regex pattern"),
+        (
+            TOOL_READ_OUTPUT,
+            "Read the contents of a repomix output file",
+        ),
+        (
+            TOOL_GREP_OUTPUT,
+            "Search a repomix output file using a regex pattern",
+        ),
     ]
 }

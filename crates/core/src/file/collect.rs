@@ -1,36 +1,44 @@
-use std::path::{Path, PathBuf};
+use crate::file::types::FileCollectOptions;
 use anyhow::Result;
 use rayon::prelude::*;
 use repomix_config::schema::RepomixConfig;
 use repomix_shared::types::*;
-use crate::file::types::FileCollectOptions;
+use std::path::{Path, PathBuf};
 
-/// 收集文件内容
+/// 收集文件内容（异步入口：在 blocking 线程池执行并行读取，避免阻塞 tokio runtime）
 pub async fn collect_files(
+    file_paths: Vec<PathBuf>,
+    config: &RepomixConfig,
+) -> Result<FileCollectResult> {
+    let config = config.clone();
+    tokio::task::spawn_blocking(move || collect_files_sync(file_paths, &config))
+        .await
+        .map_err(|e| anyhow::anyhow!("collect_files task join failed: {}", e))?
+}
+
+/// 同步收集实现
+pub fn collect_files_sync(
     file_paths: Vec<PathBuf>,
     config: &RepomixConfig,
 ) -> Result<FileCollectResult> {
     let options = FileCollectOptions::from_config(config);
     let max_file_size = options.max_file_size;
-    
-    // 并行读取文件
+
     let results: Vec<_> = file_paths
         .par_iter()
-        .map(|path| {
-            read_raw_file(path, max_file_size)
-        })
+        .map(|path| read_raw_file(path, max_file_size))
         .collect();
-    
+
     let mut raw_files = Vec::new();
     let mut skipped_files = Vec::new();
-    
+
     for result in results {
         match result {
             Ok(raw_file) => raw_files.push(raw_file),
             Err(skipped) => skipped_files.push(skipped),
         }
     }
-    
+
     Ok(FileCollectResult {
         raw_files,
         skipped_files,
@@ -40,7 +48,10 @@ pub async fn collect_files(
 /// 读取原始文件（带编码检测）
 ///
 /// 合并二进制检测和内容读取为单次 I/O，避免 TOCTOU 竞争和冗余文件打开。
-fn read_raw_file(path: &PathBuf, max_file_size: u64) -> std::result::Result<RawFile, SkippedFileInfo> {
+fn read_raw_file(
+    path: &PathBuf,
+    max_file_size: u64,
+) -> std::result::Result<RawFile, SkippedFileInfo> {
     // 检查文件大小
     let metadata = std::fs::metadata(path).map_err(|e| SkippedFileInfo {
         path: path.clone(),

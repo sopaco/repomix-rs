@@ -26,22 +26,22 @@ lib.rs
 ### lib.rs (34 lines)
 
 ```
-pub mod packager;
 pub mod file;
-pub mod security;
-pub mod output;
-pub mod metrics;
 pub mod git;
-pub mod tree_sitter;
+pub mod metrics;
+pub mod output;
+pub mod packager;
 pub mod path_util;
+pub mod security;
+pub mod tree_sitter;
 
 // Re-export config crate for convenience
 pub use repomix_config as config;
 
 // Re-export public API
-pub use packager::{pack, PackResult, PackOptions, NoopProgress, ProgressCallback};
-pub use repomix_config::schema::{RepomixConfig, OutputStyle};
+pub use packager::{NoopProgress, PackOptions, PackResult, ProgressCallback, pack};
 pub use repomix_config::load::PartialConfig;
+pub use repomix_config::schema::{OutputStyle, RepomixConfig};
 pub use repomix_shared::types::*;
 
 /// 便捷函数：一行代码打包仓库
@@ -60,5 +60,6 @@ pub async fn pack_with_config(dir: &str, config: RepomixConfig) -> anyhow::Resul
 pub async fn pack_with_options(options: PackOptions) -> anyhow::Result<PackResult> {
     pack(options.root_dirs, options.config, Box::new(NoopProgress)).await
 }
+
 ```
 

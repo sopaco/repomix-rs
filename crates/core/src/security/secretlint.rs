@@ -130,7 +130,8 @@ fn safe_compile(pattern: &str, name: &str) -> Regex {
         Err(e) => {
             tracing::warn!(
                 "Invalid regex for secret rule '{}': {}. This rule will be disabled.",
-                name, e
+                name,
+                e
             );
             Regex::new(r"\u{FEFF}never_present_marker").unwrap_or_else(|_| {
                 Regex::new("(?-u)\\A\\z").expect("hardcoded empty-anchored regex is valid")
@@ -153,7 +154,8 @@ impl TestRegionState {
     fn is_inside_test_region(&self) -> bool {
         self.test_block_start
             .is_some_and(|start| self.brace_depth >= start)
-            || self.cfg_test_start
+            || self
+                .cfg_test_start
                 .is_some_and(|start| self.brace_depth >= start)
     }
 
@@ -186,15 +188,15 @@ impl TestRegionState {
         self.brace_depth += open;
         self.brace_depth = self.brace_depth.saturating_sub(close);
 
-        if let Some(start) = self.test_block_start {
-            if self.brace_depth < start {
-                self.test_block_start = None;
-            }
+        if let Some(start) = self.test_block_start
+            && self.brace_depth < start
+        {
+            self.test_block_start = None;
         }
-        if let Some(start) = self.cfg_test_start {
-            if self.brace_depth < start {
-                self.cfg_test_start = None;
-            }
+        if let Some(start) = self.cfg_test_start
+            && self.brace_depth < start
+        {
+            self.cfg_test_start = None;
         }
     }
 }
@@ -220,15 +222,11 @@ fn secret_candidate<'a>(line: &'a str, rule: &SecretRule) -> &'a str {
     if matches!(
         rule.id.as_str(),
         "generic-api-key" | "generic-secret" | "generic-token" | "aws-secret-key"
-    ) {
-        if let Some(value) = extract_assign_quoted_value(line) {
-            return value;
-        }
+    ) && let Some(value) = extract_assign_quoted_value(line)
+    {
+        return value;
     }
-    rule.pattern
-        .find(line)
-        .map(|m| m.as_str())
-        .unwrap_or(line)
+    rule.pattern.find(line).map(|m| m.as_str()).unwrap_or(line)
 }
 
 pub fn scan_file_content(content: &str, file_path: &Path) -> Vec<SuspiciousFileResult> {
@@ -257,10 +255,10 @@ pub fn scan_file_content(content: &str, file_path: &Path) -> Vec<SuspiciousFileR
                 continue;
             }
 
-            if let Some(min_entropy) = rule.entropy {
-                if calculate_entropy(candidate) < min_entropy {
-                    continue;
-                }
+            if let Some(min_entropy) = rule.entropy
+                && calculate_entropy(candidate) < min_entropy
+            {
+                continue;
             }
 
             results.push(SuspiciousFileResult {
@@ -358,7 +356,12 @@ fn test_fixture() {
 }
 "##;
         let results = scan_file_content(content, Path::new("lib.rs"));
-        assert_eq!(results.len(), 1, "only production code should match: {:?}", results);
+        assert_eq!(
+            results.len(),
+            1,
+            "only production code should match: {:?}",
+            results
+        );
         assert_eq!(results[0].rule_id, "generic-api-key");
     }
 
@@ -376,7 +379,11 @@ mod tests {
 }
 "##;
         let results = scan_file_content(content, Path::new("secretlint.rs"));
-        assert!(results.is_empty(), "cfg(test) module should be skipped: {:?}", results);
+        assert!(
+            results.is_empty(),
+            "cfg(test) module should be skipped: {:?}",
+            results
+        );
     }
 
     #[test]

@@ -54,10 +54,7 @@ pub fn estimate_tokens_fallback(text: &str) -> usize {
     }
     let cjk_count = text.chars().filter(|c| is_cjk(*c)).count();
     let non_cjk: String = text.chars().filter(|c| !is_cjk(*c)).collect();
-    let word_tokens = non_cjk
-        .split_whitespace()
-        .filter(|s| !s.is_empty())
-        .count();
+    let word_tokens = non_cjk.split_whitespace().filter(|s| !s.is_empty()).count();
     (cjk_count + word_tokens).max(1)
 }
 

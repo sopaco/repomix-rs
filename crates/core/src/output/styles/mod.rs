@@ -1,4 +1,4 @@
-pub mod xml;
+pub mod json;
 pub mod markdown;
 pub mod plain;
-pub mod json;
+pub mod xml;

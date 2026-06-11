@@ -1,7 +1,7 @@
-use crate::schema::RepomixConfig;
 use crate::global_dir;
-use std::path::Path;
+use crate::schema::RepomixConfig;
 use anyhow::Result;
+use std::path::Path;
 
 impl RepomixConfig {
     /// 加载配置：默认值 → 全局配置 → 项目配置 → CLI 参数
@@ -11,14 +11,14 @@ impl RepomixConfig {
         // 全局配置：~/.repomix/repomix.config.json
         match Self::load_from_file(&global_dir::global_config_path()?) {
             Ok(Some(global)) => config.merge_global(global),
-            Ok(None) => {},
+            Ok(None) => {}
             Err(e) => tracing::warn!("Failed to load global config: {}", e),
         }
 
         // 项目配置：./repomix.config.json
         match Self::load_from_file(&cwd.join("repomix.config.json")) {
             Ok(Some(local)) => config.merge_local(local),
-            Ok(None) => {},
+            Ok(None) => {}
             Err(e) => tracing::warn!("Failed to load project config: {}", e),
         }
 
@@ -38,29 +38,30 @@ impl RepomixConfig {
         }
         let content = std::fs::read_to_string(path)
             .map_err(|e| anyhow::anyhow!("Failed to read config file {}: {}", path.display(), e))?;
-        let config: Self = serde_json::from_str(&content)
-            .map_err(|e| anyhow::anyhow!("Failed to parse config file {}: {}", path.display(), e))?;
+        let config: Self = serde_json::from_str(&content).map_err(|e| {
+            anyhow::anyhow!("Failed to parse config file {}: {}", path.display(), e)
+        })?;
         Ok(Some(config))
     }
 
     /// 合并全局配置
     fn merge_global(&mut self, other: Self) {
         let defaults = RepomixConfig::default();
-        
+
         // 合并include模式（追加）
         self.include.extend(other.include);
-        
+
         // 合并ignore配置
         self.ignore.custom_ignore.extend(other.ignore.custom_ignore);
         if other.ignore.use_gitignore != defaults.ignore.use_gitignore {
             self.ignore.use_gitignore = other.ignore.use_gitignore;
         }
-        
+
         // 合并input配置
         if other.input.max_file_size != defaults.input.max_file_size {
             self.input.max_file_size = other.input.max_file_size;
         }
-        
+
         // 合并output配置（仅覆盖非默认值）
         if other.output.file_path != defaults.output.file_path {
             self.output.file_path = other.output.file_path;
@@ -110,8 +111,11 @@ impl RepomixConfig {
         if other.output.include_empty_directories != defaults.output.include_empty_directories {
             self.output.include_empty_directories = other.output.include_empty_directories;
         }
-        if other.output.include_full_directory_structure != defaults.output.include_full_directory_structure {
-            self.output.include_full_directory_structure = other.output.include_full_directory_structure;
+        if other.output.include_full_directory_structure
+            != defaults.output.include_full_directory_structure
+        {
+            self.output.include_full_directory_structure =
+                other.output.include_full_directory_structure;
         }
         if other.output.split_output != defaults.output.split_output {
             self.output.split_output = other.output.split_output;
@@ -123,8 +127,11 @@ impl RepomixConfig {
         if other.output.git.sort_by_changes != defaults.output.git.sort_by_changes {
             self.output.git.sort_by_changes = other.output.git.sort_by_changes;
         }
-        if other.output.git.sort_by_changes_max_commits != defaults.output.git.sort_by_changes_max_commits {
-            self.output.git.sort_by_changes_max_commits = other.output.git.sort_by_changes_max_commits;
+        if other.output.git.sort_by_changes_max_commits
+            != defaults.output.git.sort_by_changes_max_commits
+        {
+            self.output.git.sort_by_changes_max_commits =
+                other.output.git.sort_by_changes_max_commits;
         }
         if other.output.git.include_diffs != defaults.output.git.include_diffs {
             self.output.git.include_diffs = other.output.git.include_diffs;
@@ -145,7 +152,7 @@ impl RepomixConfig {
         if other.security.enable_secretlint != defaults.security.enable_secretlint {
             self.security.enable_secretlint = other.security.enable_secretlint;
         }
-        
+
         // 合并token_count配置
         if other.token_count.encoding != defaults.token_count.encoding {
             self.token_count.encoding = other.token_count.encoding;
@@ -167,63 +174,63 @@ impl RepomixConfig {
         if let Some(mut ignore) = overrides.ignore {
             self.ignore.custom_ignore.append(&mut ignore);
         }
-        
+
         if let Some(style) = overrides.style {
             self.output.style = style;
         }
-        
+
         if let Some(compress) = overrides.compress {
             self.output.compress = compress;
         }
-        
+
         if let Some(remove_comments) = overrides.remove_comments {
             self.output.remove_comments = remove_comments;
         }
-        
+
         if let Some(remove_empty_lines) = overrides.remove_empty_lines {
             self.output.remove_empty_lines = remove_empty_lines;
         }
-        
+
         if let Some(show_line_numbers) = overrides.show_line_numbers {
             self.output.show_line_numbers = show_line_numbers;
         }
-        
+
         if let Some(truncate_base64) = overrides.truncate_base64 {
             self.output.truncate_base64 = truncate_base64;
         }
-        
+
         if let Some(copy_to_clipboard) = overrides.copy_to_clipboard {
             self.output.copy_to_clipboard = copy_to_clipboard;
         }
-        
+
         if let Some(output) = overrides.output {
             self.output.file_path = output;
         }
-        
+
         if let Some(include_empty_directories) = overrides.include_empty_directories {
             self.output.include_empty_directories = include_empty_directories;
         }
-        
+
         if let Some(top_files_length) = overrides.top_files_length {
             self.output.top_files_length = top_files_length;
         }
-        
+
         if let Some(split_output) = overrides.split_output {
             self.output.split_output = Some(split_output);
         }
-        
+
         if let Some(header_text) = overrides.header_text {
             self.output.header_text = Some(header_text);
         }
-        
+
         if let Some(instruction_file_path) = overrides.instruction_file_path {
             self.output.instruction_file_path = Some(instruction_file_path);
         }
-        
+
         if let Some(include_diffs) = overrides.include_diffs {
             self.output.git.include_diffs = include_diffs;
         }
-        
+
         if let Some(include_logs) = overrides.include_logs {
             self.output.git.include_logs = include_logs;
         }
@@ -235,12 +242,12 @@ impl RepomixConfig {
         if self.output.file_path.is_empty() {
             anyhow::bail!("Output file path cannot be empty");
         }
-        
+
         // 验证文件大小限制
         if self.input.max_file_size == 0 {
             anyhow::bail!("Max file size cannot be zero");
         }
-        
+
         Ok(())
     }
 }

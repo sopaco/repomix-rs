@@ -8,7 +8,10 @@ use repomix_shared::types::ProcessedFile;
 use crate::path_util::{git_relative_path, git_repo_root};
 
 /// 获取文件的变更频率（基于 git log）
-pub fn get_file_change_counts(repo_path: &Path, max_commits: usize) -> Result<HashMap<String, usize>> {
+pub fn get_file_change_counts(
+    repo_path: &Path,
+    max_commits: usize,
+) -> Result<HashMap<String, usize>> {
     let output = Command::new("git")
         .args([
             "log",

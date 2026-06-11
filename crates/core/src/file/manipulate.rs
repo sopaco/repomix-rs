@@ -7,22 +7,14 @@ pub fn remove_comments(content: &str, file_path: &Path) -> String {
         .extension()
         .and_then(|ext| ext.to_str())
         .unwrap_or("");
-    
+
     match extension {
-        "js" | "jsx" | "ts" | "tsx" | "java" | "c" | "cpp" | "h" | "hpp" |
-        "cs" | "go" | "rs" | "swift" | "kt" | "scala" => {
-            remove_c_style_comments(content)
-        }
-        "py" | "rb" | "yml" | "yaml" | "toml" | "ini" | "cfg" | "sh" |
-        "bash" | "zsh" | "fish" | "r" | "pl" | "pm" => {
-            remove_hash_comments(content)
-        }
-        "html" | "xml" | "svg" => {
-            remove_html_comments(content)
-        }
-        "css" | "scss" | "less" => {
-            remove_css_comments(content)
-        }
+        "js" | "jsx" | "ts" | "tsx" | "java" | "c" | "cpp" | "h" | "hpp" | "cs" | "go" | "rs"
+        | "swift" | "kt" | "scala" => remove_c_style_comments(content),
+        "py" | "rb" | "yml" | "yaml" | "toml" | "ini" | "cfg" | "sh" | "bash" | "zsh" | "fish"
+        | "r" | "pl" | "pm" => remove_hash_comments(content),
+        "html" | "xml" | "svg" => remove_html_comments(content),
+        "css" | "scss" | "less" => remove_css_comments(content),
         _ => content.to_string(),
     }
 }
@@ -131,34 +123,37 @@ fn count_trailing_hashes(s: &str) -> usize {
 ///
 /// 如果成功解析，将消耗的字符追加到已读取的字符（包括前缀）并返回完整字符串。
 /// 如果不是字符串字面量，返回 None（不消耗任何字符）。
-fn try_parse_string_literal(chars: &mut std::iter::Peekable<std::str::Chars>, prefix: char) -> Option<String> {
+fn try_parse_string_literal(
+    chars: &mut std::iter::Peekable<std::str::Chars>,
+    prefix: char,
+) -> Option<String> {
     let mut result = String::new();
     result.push(prefix);
 
     // 检查是否为 raw string: r"...", r#"..."#, r##"..."## 等
-    if prefix == 'r' {
-        if let Some(&'"') = chars.peek() {
-            // r"..." 或 r#"..."#
+    if prefix == 'r'
+        && let Some(&'"') = chars.peek()
+    {
+        // r"..." 或 r#"..."#
+        result.push(chars.next().unwrap());
+
+        // 计算 # 的数量
+        let mut hash_count = 0;
+        while let Some(&'#') = chars.peek() {
             result.push(chars.next().unwrap());
-
-            // 计算 # 的数量
-            let mut hash_count = 0;
-            while let Some(&'#') = chars.peek() {
-                result.push(chars.next().unwrap());
-                hash_count += 1;
-            }
-
-            // 查找匹配的闭合
-            let closing = format!("\"{}", "#".repeat(hash_count));
-            for c in chars.by_ref() {
-                result.push(c);
-                if result.ends_with(&closing) && result.len() > closing.len() {
-                    break;
-                }
-            }
-
-            return Some(result);
+            hash_count += 1;
         }
+
+        // 查找匹配的闭合
+        let closing = format!("\"{}", "#".repeat(hash_count));
+        for c in chars.by_ref() {
+            result.push(c);
+            if result.ends_with(&closing) && result.len() > closing.len() {
+                break;
+            }
+        }
+
+        return Some(result);
     }
 
     // 检查是否为 byte string: b"...", br"...", br#"..."# 等

@@ -13,7 +13,9 @@ pub fn display_path(path: &Path, pack_root: &Path) -> String {
     }
 
     let path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-    let root = pack_root.canonicalize().unwrap_or_else(|_| pack_root.to_path_buf());
+    let root = pack_root
+        .canonicalize()
+        .unwrap_or_else(|_| pack_root.to_path_buf());
     path.strip_prefix(&root)
         .unwrap_or(&path)
         .to_string_lossy()
@@ -85,10 +87,10 @@ pub fn is_repomix_output_artifact(file_name: &str, configured_output: &str) -> b
         return true;
     }
     // split 分片：`repomix-output.xml.2`
-    if let Some(suffix) = file_name.strip_prefix(&format!("{configured_base}.")) {
-        if suffix.parse::<u32>().is_ok() {
-            return true;
-        }
+    if let Some(suffix) = file_name.strip_prefix(&format!("{configured_base}."))
+        && suffix.parse::<u32>().is_ok()
+    {
+        return true;
     }
     file_name.starts_with("repomix-output.")
 }

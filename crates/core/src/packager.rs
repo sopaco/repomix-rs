@@ -1,16 +1,16 @@
-use std::path::PathBuf;
-use std::collections::HashMap;
 use anyhow::Result;
 use repomix_config::schema::RepomixConfig;
 use repomix_shared::types::*;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::file;
-use crate::security;
-use crate::output;
-use crate::metrics;
 use crate::git;
+use crate::metrics;
+use crate::output;
 use crate::path_util::display_path;
 use crate::path_util::{effective_pack_root, resolve_output_file_path};
+use crate::security;
 
 // Re-export config types for convenience
 pub use repomix_config::schema::OutputStyle;
@@ -132,42 +132,34 @@ pub async fn pack(
     let search_result = file::search::search_files(&root_dirs, &config).await?;
 
     // 提取空目录路径（用于 include_full_directory_structure）
-    let empty_dir_strs: Vec<String> = search_result.empty_dir_paths.iter()
+    let empty_dir_strs: Vec<String> = search_result
+        .empty_dir_paths
+        .iter()
         .map(|p| p.to_string_lossy().to_string())
         .collect();
 
     progress.on_progress("Collecting file contents...");
-    let collect_result = file::collect::collect_files(
-        search_result.file_paths,
-        &config,
-    ).await?;
+    let collect_result = file::collect::collect_files(search_result.file_paths, &config).await?;
 
     progress.on_progress("Running security checks...");
-    let validation = security::validate::validate_file_safety(
-        &collect_result.raw_files,
-        &config,
-    )?;
+    let validation = security::validate::validate_file_safety(&collect_result.raw_files, &config)?;
 
     progress.on_progress("Processing file contents...");
-    let mut processed = file::process::process_files(
-        &collect_result.raw_files,
-        &config,
-    )?;
+    let mut processed = file::process::process_files(&collect_result.raw_files, &config)?;
 
     // Sort by git changes if enabled
     if config.output.git.sort_by_changes {
         progress.on_progress("Sorting by git changes...");
-        if let Some(root_dir) = root_dirs.first() {
-            if git::remote::is_git_repo(root_dir) {
-                if let Err(e) = git::sort::sort_by_git_changes(
-                    &mut processed,
-                    root_dir,
-                    config.output.git.sort_by_changes_max_commits,
-                ) {
-                    // 用 tracing::warn 替代 eprintln，统一日志通道
-                    tracing::warn!("Failed to sort by git changes: {}", e);
-                }
-            }
+        if let Some(root_dir) = root_dirs.first()
+            && git::remote::is_git_repo(root_dir)
+            && let Err(e) = git::sort::sort_by_git_changes(
+                &mut processed,
+                root_dir,
+                config.output.git.sort_by_changes_max_commits,
+            )
+        {
+            // 用 tracing::warn 替代 eprintln，统一日志通道
+            tracing::warn!("Failed to sort by git changes: {}", e);
         }
     }
 
@@ -178,34 +170,40 @@ pub async fn pack(
     let mut git_diff_token_count = 0usize;
     let mut git_log_content = None;
     let mut git_log_token_count = 0usize;
-    if let Some(root_dir) = root_dirs.first() {
-        if git::remote::is_git_repo(root_dir) {
-            if config.output.git.include_diffs {
-                match git::diff::get_git_diffs(root_dir) {
-                    Ok(diff_result) => {
-                        let diff_content = format!("{}\n{}", diff_result.work_tree, diff_result.staged);
-                        git_diff_token_count = metrics::token_count::TokenCounter::new(&config.token_count.encoding)
+    if let Some(root_dir) = root_dirs.first()
+        && git::remote::is_git_repo(root_dir)
+    {
+        if config.output.git.include_diffs {
+            match git::diff::get_git_diffs(root_dir) {
+                Ok(diff_result) => {
+                    let diff_content = format!("{}\n{}", diff_result.work_tree, diff_result.staged);
+                    git_diff_token_count =
+                        metrics::token_count::TokenCounter::new(&config.token_count.encoding)
                             .map(|c| c.count_tokens(&diff_content))
-                            .unwrap_or_else(|_| metrics::token_count::estimate_tokens_fallback(&diff_content));
-                        git_diff_content = Some(diff_content);
-                    }
-                    Err(e) => {
-                        tracing::warn!("Failed to get git diffs: {}", e);
-                    }
+                            .unwrap_or_else(|_| {
+                                metrics::token_count::estimate_tokens_fallback(&diff_content)
+                            });
+                    git_diff_content = Some(diff_content);
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to get git diffs: {}", e);
                 }
             }
-            if config.output.git.include_logs {
-                match git::log::get_git_logs(root_dir, config.output.git.include_logs_count) {
-                    Ok(log_result) => {
-                        let log_content = log_result.logs.join("\n");
-                        git_log_token_count = metrics::token_count::TokenCounter::new(&config.token_count.encoding)
+        }
+        if config.output.git.include_logs {
+            match git::log::get_git_logs(root_dir, config.output.git.include_logs_count) {
+                Ok(log_result) => {
+                    let log_content = log_result.logs.join("\n");
+                    git_log_token_count =
+                        metrics::token_count::TokenCounter::new(&config.token_count.encoding)
                             .map(|c| c.count_tokens(&log_content))
-                            .unwrap_or_else(|_| metrics::token_count::estimate_tokens_fallback(&log_content));
-                        git_log_content = Some(log_content);
-                    }
-                    Err(e) => {
-                        tracing::warn!("Failed to get git logs: {}", e);
-                    }
+                            .unwrap_or_else(|_| {
+                                metrics::token_count::estimate_tokens_fallback(&log_content)
+                            });
+                    git_log_content = Some(log_content);
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to get git logs: {}", e);
                 }
             }
         }
@@ -266,7 +264,8 @@ fn filter_suspicious(
     processed: Vec<ProcessedFile>,
     validation: &ValidationResult,
 ) -> Vec<ProcessedFile> {
-    let suspicious_paths: std::collections::HashSet<_> = validation.suspicious.iter().map(|s| &s.path).collect();
+    let suspicious_paths: std::collections::HashSet<_> =
+        validation.suspicious.iter().map(|s| &s.path).collect();
 
     processed
         .into_iter()

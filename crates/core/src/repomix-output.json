@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "packed_at": "2026-06-10T13:19:56.064003+00:00",
+    "packed_at": "2026-06-11T05:54:09.106176+00:00",
     "total_files": 1,
     "total_tokens": 314
   },
@@ -9,7 +9,7 @@
   "files": [
     {
       "path": "lib.rs",
-      "content": "pub mod packager;\npub mod file;\npub mod security;\npub mod output;\npub mod metrics;\npub mod git;\npub mod tree_sitter;\npub mod path_util;\n\n// Re-export config crate for convenience\npub use repomix_config as config;\n\n// Re-export public API\npub use packager::{pack, PackResult, PackOptions, NoopProgress, ProgressCallback};\npub use repomix_config::schema::{RepomixConfig, OutputStyle};\npub use repomix_config::load::PartialConfig;\npub use repomix_shared::types::*;\n\n/// 便捷函数：一行代码打包仓库\npub async fn pack_directory(dir: &str) -> anyhow::Result<PackResult> {\n    let options = PackOptions::new(std::path::PathBuf::from(dir));\n    pack(options.root_dirs, options.config, Box::new(NoopProgress)).await\n}\n\n/// 便捷函数：自定义配置打包\npub async fn pack_with_config(dir: &str, config: RepomixConfig) -> anyhow::Result<PackResult> {\n    let options = PackOptions::new(std::path::PathBuf::from(dir)).with_config(config);\n    pack(options.root_dirs, options.config, Box::new(NoopProgress)).await\n}\n\n/// 便捷函数：使用 PackOptions 打包\npub async fn pack_with_options(options: PackOptions) -> anyhow::Result<PackResult> {\n    pack(options.root_dirs, options.config, Box::new(NoopProgress)).await\n}",
+      "content": "pub mod file;\npub mod git;\npub mod metrics;\npub mod output;\npub mod packager;\npub mod path_util;\npub mod security;\npub mod tree_sitter;\n\n// Re-export config crate for convenience\npub use repomix_config as config;\n\n// Re-export public API\npub use packager::{NoopProgress, PackOptions, PackResult, ProgressCallback, pack};\npub use repomix_config::load::PartialConfig;\npub use repomix_config::schema::{OutputStyle, RepomixConfig};\npub use repomix_shared::types::*;\n\n/// 便捷函数：一行代码打包仓库\npub async fn pack_directory(dir: &str) -> anyhow::Result<PackResult> {\n    let options = PackOptions::new(std::path::PathBuf::from(dir));\n    pack(options.root_dirs, options.config, Box::new(NoopProgress)).await\n}\n\n/// 便捷函数：自定义配置打包\npub async fn pack_with_config(dir: &str, config: RepomixConfig) -> anyhow::Result<PackResult> {\n    let options = PackOptions::new(std::path::PathBuf::from(dir)).with_config(config);\n    pack(options.root_dirs, options.config, Box::new(NoopProgress)).await\n}\n\n/// 便捷函数：使用 PackOptions 打包\npub async fn pack_with_options(options: PackOptions) -> anyhow::Result<PackResult> {\n    pack(options.root_dirs, options.config, Box::new(NoopProgress)).await\n}\n",
       "token_count": 314
     }
   ],

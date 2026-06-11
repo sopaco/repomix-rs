@@ -236,4 +236,3 @@ fn default_100() -> usize {
 fn default_50() -> usize {
     50
 }
-

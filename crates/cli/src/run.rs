@@ -1,9 +1,9 @@
+use crate::prompts;
+use crate::report::print_report;
+use crate::spinner::Spinner;
 use anyhow::Result;
 use repomix_config::schema::RepomixConfig;
 use repomix_core::packager::pack;
-use crate::report::print_report;
-use crate::spinner::Spinner;
-use crate::prompts;
 
 pub async fn init_config() -> Result<()> {
     let root_dir = std::env::current_dir()?;
@@ -68,36 +68,51 @@ impl TempDirGuard {
 
 impl Drop for TempDirGuard {
     fn drop(&mut self) {
-        if let Some(path) = self.path.take() {
-            if let Err(e) = std::fs::remove_dir_all(&path) {
-                tracing::warn!(
-                    "Failed to clean up temp dir '{}': {}.",
-                    path.display(),
-                    e
-                );
-            }
+        if let Some(path) = self.path.take()
+            && let Err(e) = std::fs::remove_dir_all(&path)
+        {
+            tracing::warn!("Failed to clean up temp dir '{}': {}.", path.display(), e);
         }
     }
 }
 
-fn build_config(
-    cli: &crate::Cli,
-    config_root: &std::path::Path,
-) -> Result<RepomixConfig> {
+fn build_config(cli: &crate::Cli, config_root: &std::path::Path) -> Result<RepomixConfig> {
     // 配置根目录使用用户当前工作目录，而非 pack 根目录（`--remote` 时为临时克隆目录）。
     // 默认值 → 全局配置 → 项目配置 → CLI 参数
     let partial = repomix_config::load::PartialConfig {
-        include: cli.include.as_ref().map(|s| s.split(',').map(|p| p.trim().to_string()).collect()),
-        ignore: cli.ignore.as_ref().map(|s| s.split(',').map(|p| p.trim().to_string()).collect()),
+        include: cli
+            .include
+            .as_ref()
+            .map(|s| s.split(',').map(|p| p.trim().to_string()).collect()),
+        ignore: cli
+            .ignore
+            .as_ref()
+            .map(|s| s.split(',').map(|p| p.trim().to_string()).collect()),
         style: Some(cli.style.into()),
         compress: if cli.compress { Some(true) } else { None },
-        remove_comments: if cli.remove_comments { Some(true) } else { None },
-        remove_empty_lines: if cli.remove_empty_lines { Some(true) } else { None },
+        remove_comments: if cli.remove_comments {
+            Some(true)
+        } else {
+            None
+        },
+        remove_empty_lines: if cli.remove_empty_lines {
+            Some(true)
+        } else {
+            None
+        },
         show_line_numbers: if cli.line_numbers { Some(true) } else { None },
-        truncate_base64: if cli.truncate_base64 { Some(true) } else { None },
+        truncate_base64: if cli.truncate_base64 {
+            Some(true)
+        } else {
+            None
+        },
         copy_to_clipboard: if cli.copy { Some(true) } else { None },
         output: cli.output.clone(),
-        include_empty_directories: if cli.include_empty_directories { Some(true) } else { None },
+        include_empty_directories: if cli.include_empty_directories {
+            Some(true)
+        } else {
+            None
+        },
         top_files_length: cli.top_files_length,
         split_output: cli.split_output,
         header_text: cli.header_text.clone(),

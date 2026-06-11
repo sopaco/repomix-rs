@@ -151,10 +151,7 @@ fn tree_to_string_with_line_counts_inner(
                 Some(count) => format!(" ({} lines)", count),
                 None => String::new(),
             };
-            result.push_str(&format!(
-                "{}{}{}\n",
-                prefix, child.name, line_count_suffix
-            ));
+            result.push_str(&format!("{}{}{}\n", prefix, child.name, line_count_suffix));
         }
     }
 
@@ -180,7 +177,10 @@ pub fn generate_tree_string_with_line_counts(
 }
 
 /// 计算文件行数
-pub fn calculate_file_line_counts(file_paths: &[String], contents: &[String]) -> HashMap<String, usize> {
+pub fn calculate_file_line_counts(
+    file_paths: &[String],
+    contents: &[String],
+) -> HashMap<String, usize> {
     let mut line_counts = HashMap::new();
 
     for (path, content) in file_paths.iter().zip(contents.iter()) {

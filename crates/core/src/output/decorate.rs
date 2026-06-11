@@ -10,9 +10,11 @@ pub struct OutputHeader {
 pub fn collect_header(config: &RepomixConfig) -> OutputHeader {
     let header_text = config.output.header_text.clone();
 
-    let instruction_content = config.output.instruction_file_path.as_ref().and_then(|path| {
-        std::fs::read_to_string(path).ok()
-    });
+    let instruction_content = config
+        .output
+        .instruction_file_path
+        .as_ref()
+        .and_then(|path| std::fs::read_to_string(path).ok());
 
     OutputHeader {
         header_text,
@@ -24,11 +26,11 @@ pub fn collect_header(config: &RepomixConfig) -> OutputHeader {
 pub fn format_header(header: &OutputHeader) -> String {
     let mut parts = Vec::new();
 
-    if let Some(ref text) = header.header_text {
+    if let Some(text) = &header.header_text {
         parts.push(text.clone());
     }
 
-    if let Some(ref text) = header.instruction_content {
+    if let Some(text) = &header.instruction_content {
         parts.push(text.clone());
     }
 

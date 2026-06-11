@@ -1,12 +1,12 @@
-use std::path::PathBuf;
-use std::sync::LazyLock;
+use crate::file::types::FileSearchOptions;
+use crate::path_util::is_repomix_output_artifact;
 use anyhow::Result;
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use ignore::WalkBuilder;
 use repomix_config::schema::RepomixConfig;
 use repomix_shared::types::FileSearchResult;
-use crate::file::types::FileSearchOptions;
-use crate::path_util::is_repomix_output_artifact;
+use std::path::PathBuf;
+use std::sync::LazyLock;
 
 /// 预编译的默认忽略模式匹配器（从 config/default_ignore.rs 的同一列表生成）
 static DEFAULT_IGNORE_SET: LazyLock<GlobSet> = LazyLock::new(|| {
@@ -23,7 +23,9 @@ static DEFAULT_IGNORE_SET: LazyLock<GlobSet> = LazyLock::new(|| {
              Default ignore rules are disabled.",
             e
         );
-        GlobSetBuilder::new().build().expect("empty GlobSet must build")
+        GlobSetBuilder::new()
+            .build()
+            .expect("empty GlobSet must build")
     })
 });
 
@@ -40,16 +42,14 @@ fn compile_user_patterns(patterns: &[String]) -> GlobSet {
                 invalid_count += 1;
                 tracing::warn!(
                     "Invalid glob pattern '{}': {}. This rule will be skipped.",
-                    pattern, e
+                    pattern,
+                    e
                 );
             }
         }
     }
     if invalid_count > 0 {
-        tracing::warn!(
-            "{} invalid glob pattern(s) were skipped.",
-            invalid_count
-        );
+        tracing::warn!("{} invalid glob pattern(s) were skipped.", invalid_count);
     }
     builder.build().unwrap_or_default()
 }
@@ -105,20 +105,16 @@ pub fn search_files_sync(
             let path = entry.path().to_path_buf();
 
             if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
-                if options.include_empty_directories {
-                    if let Ok(mut entries) = std::fs::read_dir(&path) {
-                        if entries.next().is_none() {
-                            empty_dir_paths.push(path);
-                        }
-                    }
+                if options.include_empty_directories
+                    && let Ok(mut entries) = std::fs::read_dir(&path)
+                    && entries.next().is_none()
+                {
+                    empty_dir_paths.push(path);
                 }
                 continue;
             }
 
-            let file_name = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("");
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
             if output_file_paths.contains(&path)
                 || is_repomix_output_artifact(file_name, &config.output.file_path)
             {
@@ -127,15 +123,11 @@ pub fn search_files_sync(
 
             let relative_path = path.strip_prefix(root_dir).unwrap_or(&path);
 
-            if !options.include_patterns.is_empty()
-                && !include_matcher.is_match(relative_path)
-            {
+            if !options.include_patterns.is_empty() && !include_matcher.is_match(relative_path) {
                 continue;
             }
 
-            if !options.ignore_patterns.is_empty()
-                && ignore_matcher.is_match(relative_path)
-            {
+            if !options.ignore_patterns.is_empty() && ignore_matcher.is_match(relative_path) {
                 continue;
             }
 

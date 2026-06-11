@@ -1,14 +1,18 @@
-mod run;
-mod report;
-mod spinner;
 mod prompts;
+mod report;
+mod run;
+mod spinner;
 
 use clap::{Parser, ValueEnum};
 use repomix_config::schema::OutputStyle;
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "repomix-rs", version, about = "Pack your codebase into AI-friendly formats")]
+#[command(
+    name = "repomix-rs",
+    version,
+    about = "Pack your codebase into AI-friendly formats"
+)]
 struct Cli {
     /// Directory to pack
     root: Option<PathBuf>,
@@ -122,24 +126,24 @@ impl From<CliOutputStyle> for OutputStyle {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    
+
     // 初始化日志
     repomix_shared::logger::init_logger(cli.verbose > 0);
-    
+
     // 处理初始化命令
     if cli.init {
         run::init_config().await?;
         return Ok(());
     }
-    
+
     // 处理MCP服务器模式
     if cli.mcp {
         run::run_mcp_server().await?;
         return Ok(());
     }
-    
+
     // 正常打包模式
     run::run_pack(cli).await?;
-    
+
     Ok(())
 }

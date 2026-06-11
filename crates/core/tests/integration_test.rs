@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use repomix_config::schema::{RepomixConfig, OutputStyle};
-use repomix_core::packager::{pack, NoopProgress, PackOptions};
+use repomix_config::schema::{OutputStyle, RepomixConfig};
+use repomix_core::packager::{NoopProgress, PackOptions, pack};
 use repomix_core::{pack_directory, pack_with_config};
+use std::path::PathBuf;
 
 #[tokio::test]
 async fn test_pack_single_file() {
@@ -129,7 +129,10 @@ fn test_split_output_no_split() {
 fn test_split_output_with_split() {
     use repomix_core::output::split::split_output;
 
-    let content = (0..200).map(|i| format!("word{}", i)).collect::<Vec<_>>().join("\n");
+    let content = (0..200)
+        .map(|i| format!("word{}", i))
+        .collect::<Vec<_>>()
+        .join("\n");
     let result = split_output(&content, 50, &OutputStyle::Xml, "o200k_base");
 
     assert!(result.len() > 1);
@@ -188,8 +191,8 @@ fn test_secretlint_clean_file() {
 
 #[test]
 fn test_file_search() {
-    use repomix_core::file::search::search_files;
     use repomix_config::schema::RepomixConfig;
+    use repomix_core::file::search::search_files;
 
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src");
     let config = RepomixConfig::default();
@@ -204,8 +207,8 @@ fn test_file_search() {
 
 #[test]
 fn test_file_collect() {
-    use repomix_core::file::collect::collect_files;
     use repomix_config::schema::RepomixConfig;
+    use repomix_core::file::collect::collect_files;
 
     let test_file = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lib.rs");
     let config = RepomixConfig::default();
@@ -220,18 +223,16 @@ fn test_file_collect() {
 
 #[test]
 fn test_metrics_calculation() {
-    use repomix_core::metrics::calculate::calculate_metrics;
     use repomix_config::schema::RepomixConfig;
+    use repomix_core::metrics::calculate::calculate_metrics;
     use repomix_shared::types::ProcessedFile;
     use std::path::PathBuf;
 
-    let files = vec![
-        ProcessedFile {
-            path: PathBuf::from("test.rs"),
-            content: "fn main() {}".to_string(),
-            token_count: 4,
-        },
-    ];
+    let files = vec![ProcessedFile {
+        path: PathBuf::from("test.rs"),
+        content: "fn main() {}".to_string(),
+        token_count: 4,
+    }];
 
     let config = RepomixConfig::default();
     let result = calculate_metrics(&files, &config);
@@ -262,8 +263,7 @@ fn test_tree_sitter_languages() {
 /// 容错 panic 导致的 poison。
 use once_cell::sync::Lazy;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
-static CHDIR_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+static CHDIR_LOCK: Lazy<tokio::sync::Mutex<()>> = Lazy::new(|| tokio::sync::Mutex::new(()));
 
 /// 跨测试递增的 tmpdir 后缀计数器：保证每个测试运行都得到独立 tmpdir，
 /// 不会因为前一次失败的残留污染后一次（即使跨 cargo test 进程重启，
@@ -274,7 +274,7 @@ static BUG8_COUNTER: AtomicU64 = AtomicU64::new(0);
 /// 三重组合确保跨 cargo test 进程重启也不会冲突。
 fn next_bug8_n() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};
-    let counter = BUG8_COUNTER.fetch_add(1, Ordering::SeqCst) as u64;
+    let counter = BUG8_COUNTER.fetch_add(1, Ordering::SeqCst);
     let pid = std::process::id() as u64;
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -284,10 +284,8 @@ fn next_bug8_n() -> u64 {
     counter.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ pid.rotate_left(17) ^ nanos.rotate_left(7)
 }
 
-fn chdir_lock() -> std::sync::MutexGuard<'static, ()> {
-    CHDIR_LOCK
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+async fn chdir_lock() -> tokio::sync::MutexGuard<'static, ()> {
+    CHDIR_LOCK.lock().await
 }
 
 /// `top_files_length` 影响 `calculate_metrics` 输出。
@@ -319,7 +317,10 @@ async fn test_top_files_length_is_respected_bug7() {
     assert_eq!(result.top_files_by_tokens[0].1, 100 + 19 * 50);
     // 顺序按 token 数降序
     for w in result.top_files_by_tokens.windows(2) {
-        assert!(w[0].1 >= w[1].1, "top_files_by_tokens should be sorted descending");
+        assert!(
+            w[0].1 >= w[1].1,
+            "top_files_by_tokens should be sorted descending"
+        );
     }
 
     // top_files_length=0 表示禁用，不返回任何条目
@@ -331,7 +332,7 @@ async fn test_top_files_length_is_respected_bug7() {
 /// 默认 `output.file_path` 时，输出后缀跟随 style。
 #[tokio::test]
 async fn test_output_path_follows_style_bug8() {
-    let _guard = chdir_lock();
+    let _guard = chdir_lock().await;
     use std::fs;
     let n = next_bug8_n();
 
@@ -394,7 +395,7 @@ async fn test_output_path_follows_style_bug8() {
 /// 用户显式设置 `file_path` 时不被动态后缀覆盖。
 #[tokio::test]
 async fn test_output_path_user_override_preserved_bug8() {
-    let _guard = chdir_lock();
+    let _guard = chdir_lock().await;
     use std::fs;
     let n = next_bug8_n();
 
@@ -461,9 +462,9 @@ fn test_csharp_disabled_due_to_abi_mismatch_bug2() {
 /// XML 输出须转义文件内容中的 XML 保留字符（`& < >`）。
 #[test]
 fn test_xml_output_escapes_file_content_bug4() {
-    use repomix_core::output::styles::xml::generate_xml;
-    use repomix_config::schema::{RepomixConfig, OutputStyle};
+    use repomix_config::schema::{OutputStyle, RepomixConfig};
     use repomix_core::output::decorate::OutputHeader;
+    use repomix_core::output::styles::xml::generate_xml;
     use repomix_shared::types::ProcessedFile;
     use std::path::PathBuf;
 
@@ -486,8 +487,19 @@ fn test_xml_output_escapes_file_content_bug4() {
         },
     ];
 
-    let header = OutputHeader { header_text: None, instruction_content: None };
-    let output = generate_xml(&files, &config, std::path::Path::new("."), "", &header, &None, &None);
+    let header = OutputHeader {
+        header_text: None,
+        instruction_content: None,
+    };
+    let output = generate_xml(
+        &files,
+        &config,
+        std::path::Path::new("."),
+        "",
+        &header,
+        &None,
+        &None,
+    );
 
     // 关键断言：内容中出现的 `</file>` 必须被转义为 `&lt;/file&gt;`
     assert!(
@@ -525,8 +537,8 @@ fn test_xml_output_escapes_file_content_bug4() {
 /// 含非 ASCII 字符的文件应被正确读取，不因 `had_errors` 误判而跳过。
 #[tokio::test]
 async fn test_encoding_detect_keeps_non_ascii_files_bug1() {
-    use repomix_core::file::collect::collect_files;
     use repomix_config::schema::RepomixConfig;
+    use repomix_core::file::collect::collect_files;
     use std::fs;
     use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -551,12 +563,9 @@ async fn test_encoding_detect_keeps_non_ascii_files_bug1() {
     fs::write(&latin1_file, b"caf\xE9 au lait\n").unwrap();
 
     let config = RepomixConfig::default();
-    let result = collect_files(
-        vec![utf8_file, gbk_file, latin1_file],
-        &config,
-    )
-    .await
-    .unwrap();
+    let result = collect_files(vec![utf8_file, gbk_file, latin1_file], &config)
+        .await
+        .unwrap();
 
     // 三个文件都不应被跳过
     assert!(
@@ -564,11 +573,7 @@ async fn test_encoding_detect_keeps_non_ascii_files_bug1() {
         "No file should be skipped due to encoding detection, got: {:?}",
         result.skipped_files
     );
-    assert_eq!(
-        result.raw_files.len(),
-        3,
-        "All 3 files should be collected"
-    );
+    assert_eq!(result.raw_files.len(), 3, "All 3 files should be collected");
 
     // GBK 文件应被解码为可读中文（"你好"或"好"或"世界"都应至少存在一个）
     let gbk_content = result
@@ -619,7 +624,7 @@ fn test_repomix_output_artifacts_excluded_from_search() {
     let config = RepomixConfig::default();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let result = rt
-        .block_on(search_files(&[tmpdir.clone()], &config))
+        .block_on(search_files(std::slice::from_ref(&tmpdir), &config))
         .unwrap();
 
     let names: Vec<String> = result
@@ -741,7 +746,7 @@ async fn test_utf16_bom_file_collected() {
 /// 回归：相对 output.file_path 写入 pack 根目录，而非调用者 CWD。
 #[tokio::test]
 async fn test_output_written_to_pack_root_not_cwd() {
-    let _guard = chdir_lock();
+    let _guard = chdir_lock().await;
     use std::fs;
 
     static COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -757,13 +762,9 @@ async fn test_output_written_to_pack_root_not_cwd() {
     let mut config = RepomixConfig::default();
     config.output.file_path = "repomix-output.xml".to_string();
 
-    pack(
-        vec![base.join("repo")],
-        config,
-        Box::new(NoopProgress),
-    )
-    .await
-    .unwrap();
+    pack(vec![base.join("repo")], config, Box::new(NoopProgress))
+        .await
+        .unwrap();
 
     let expected = base.join("repo/repomix-output.xml");
     assert!(

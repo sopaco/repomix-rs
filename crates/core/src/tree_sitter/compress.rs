@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use tree_sitter::{Parser, QueryCursor};
 use streaming_iterator::StreamingIterator;
+use tree_sitter::{Parser, QueryCursor};
 
 use crate::tree_sitter::languages::LanguageConfig;
 
@@ -88,7 +88,9 @@ fn gamma() { println!("third"); }
         assert!(
             alpha_pos < beta_pos && beta_pos < gamma_pos,
             "captures must follow source order: alpha={} beta={} gamma={}",
-            alpha_pos, beta_pos, gamma_pos
+            alpha_pos,
+            beta_pos,
+            gamma_pos
         );
     }
 
@@ -96,8 +98,7 @@ fn gamma() { println!("third"); }
     fn test_compress_empty_file_returns_none() {
         let content = "";
         let config = get_language_config(Path::new("test.rs")).expect("rust config");
-        let result = compress_file(content, Path::new("test.rs"), config)
-            .expect("compress ok");
+        let result = compress_file(content, Path::new("test.rs"), config).expect("compress ok");
         assert!(result.is_none());
     }
 }

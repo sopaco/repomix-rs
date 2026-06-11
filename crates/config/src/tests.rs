@@ -8,9 +8,14 @@ use crate::schema::RepomixConfig;
 /// CLI `--include` / `--ignore` 应追加到已有配置，而非覆盖。
 #[test]
 fn test_merge_cli_appends_includes_bug1() {
-    let mut config = RepomixConfig::default();
-    config.include = vec!["*.rs".to_string(), "*.toml".to_string()];
-    config.ignore.custom_ignore = vec!["target/**".to_string()];
+    let mut config = RepomixConfig {
+        include: vec!["*.rs".to_string(), "*.toml".to_string()],
+        ignore: crate::schema::IgnoreConfig {
+            custom_ignore: vec!["target/**".to_string()],
+            ..Default::default()
+        },
+        ..Default::default()
+    };
 
     let overrides = PartialConfig {
         include: Some(vec!["Cargo.toml".to_string()]),
@@ -21,23 +26,42 @@ fn test_merge_cli_appends_includes_bug1() {
     config.merge_cli(overrides);
 
     // include 应是原有的 2 项 + CLI 新增 1 项
-    assert_eq!(config.include.len(), 3, "include should be appended, not replaced");
+    assert_eq!(
+        config.include.len(),
+        3,
+        "include should be appended, not replaced"
+    );
     assert!(config.include.contains(&"*.rs".to_string()));
     assert!(config.include.contains(&"*.toml".to_string()));
     assert!(config.include.contains(&"Cargo.toml".to_string()));
 
     // ignore 同理
     assert_eq!(config.ignore.custom_ignore.len(), 2);
-    assert!(config.ignore.custom_ignore.contains(&"target/**".to_string()));
-    assert!(config.ignore.custom_ignore.contains(&"**/*.bak".to_string()));
+    assert!(
+        config
+            .ignore
+            .custom_ignore
+            .contains(&"target/**".to_string())
+    );
+    assert!(
+        config
+            .ignore
+            .custom_ignore
+            .contains(&"**/*.bak".to_string())
+    );
 }
 
 /// CLI 未传 include / ignore 时不改变已有配置。
 #[test]
 fn test_merge_cli_none_preserves_existing_bug1() {
-    let mut config = RepomixConfig::default();
-    config.include = vec!["*.rs".to_string()];
-    config.ignore.custom_ignore = vec!["target/**".to_string()];
+    let mut config = RepomixConfig {
+        include: vec!["*.rs".to_string()],
+        ignore: crate::schema::IgnoreConfig {
+            custom_ignore: vec!["target/**".to_string()],
+            ..Default::default()
+        },
+        ..Default::default()
+    };
 
     let overrides = PartialConfig::default();
     config.merge_cli(overrides);

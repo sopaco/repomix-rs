@@ -35,6 +35,25 @@ This repository is a Cargo workspace with five crates:
 
 ## Installation
 
+### npm (recommended)
+
+Install the Rust build from npm. The npm package is named **`repomix-rs`** (to distinguish it from the [original TypeScript Repomix](https://www.npmjs.com/package/repomix)); the terminal command is **`repomix`**.
+
+```bash
+# Global install → `repomix` on your PATH
+npm install -g repomix-rs
+
+# One-off run (no global install)
+npx repomix-rs .
+
+# MCP server for AI agents
+npx -y repomix-rs --mcp
+```
+
+Supported platforms: Linux (x64, arm64), macOS (x64, arm64), Windows (x64).
+
+> If both `repomix` (TypeScript) and `repomix-rs` (Rust) are installed globally, the last install wins for the `repomix` command. Install only the one you need, or use `npx repomix-rs` / `npx repomix` explicitly.
+
 ### From source
 
 ```bash

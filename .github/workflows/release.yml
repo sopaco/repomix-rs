@@ -1,0 +1,203 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: repomix
+
+jobs:
+  build:
+    name: build (${{ matrix.npm_suffix }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            npm_suffix: linux-x64
+            cross: false
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            npm_suffix: linux-arm64
+            cross: false
+          - runner: macos-latest
+            target: aarch64-apple-darwin
+            npm_suffix: darwin-arm64
+            cross: false
+          - runner: macos-latest
+            target: x86_64-apple-darwin
+            npm_suffix: darwin-x64
+            cross: true
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            npm_suffix: win32-x64
+            cross: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Add cross-compilation target
+        if: matrix.cross
+        run: rustup target add ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release binary
+        shell: bash
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cargo build --release -p repomix-cli --target "${{ matrix.target }}"
+            BIN_DIR="target/${{ matrix.target }}/release"
+          else
+            cargo build --release -p repomix-cli
+            BIN_DIR="target/release"
+          fi
+
+          mkdir -p artifact
+          if [ "${{ matrix.npm_suffix }}" = "win32-x64" ]; then
+            cp "${BIN_DIR}/${BINARY_NAME}.exe" artifact/
+          else
+            cp "${BIN_DIR}/${BINARY_NAME}" artifact/
+          fi
+        env:
+          BINARY_NAME: ${{ env.BINARY_NAME }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: repomix-${{ matrix.npm_suffix }}
+          path: artifact/
+          if-no-files-found: error
+
+  github-release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Release version: ${VERSION}"
+
+      - name: Verify versions
+        run: node scripts/check-npm-version.mjs --expected "${{ steps.version.outputs.version }}"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package release archives
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p dist
+          shopt -s nullglob
+          for dir in artifacts/repomix-*; do
+            suffix="${dir#artifacts/repomix-}"
+            if [ -f "${dir}/artifact/repomix.exe" ]; then
+              (cd "${dir}/artifact" && zip -q "../../dist/repomix-rs-${VERSION}-${suffix}.zip" repomix.exe)
+            elif [ -f "${dir}/artifact/repomix" ]; then
+              tar -czf "dist/repomix-rs-${VERSION}-${suffix}.tar.gz" -C "${dir}/artifact" repomix
+            else
+              echo "No binary found in ${dir}/artifact"
+              exit 1
+            fi
+          done
+          ls -la dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*
+
+  publish-npm-platform:
+    name: npm platform (${{ matrix.npm_suffix }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        npm_suffix:
+          - linux-x64
+          - linux-arm64
+          - darwin-x64
+          - darwin-arm64
+          - win32-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: repomix-${{ matrix.npm_suffix }}
+          path: binary
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish platform package
+        shell: bash
+        run: |
+          if [ -f binary/artifact/repomix.exe ]; then
+            BINARY="binary/artifact/repomix.exe"
+          else
+            BINARY="binary/artifact/repomix"
+          fi
+          node scripts/publish-npm.mjs platform \
+            --npm-suffix "${{ matrix.npm_suffix }}" \
+            --binary "${BINARY}" \
+            --version "${{ steps.version.outputs.version }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-npm-main:
+    name: npm main package
+    needs: publish-npm-platform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish main package
+        run: node scripts/publish-npm.mjs main --version "${{ steps.version.outputs.version }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

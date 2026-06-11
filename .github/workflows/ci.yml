@@ -26,3 +26,6 @@ jobs:
 
       - name: Test
         run: cargo test --workspace
+
+      - name: Check npm version alignment
+        run: node scripts/check-npm-version.mjs

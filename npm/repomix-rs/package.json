@@ -1,0 +1,39 @@
+{
+  "name": "repomix-rs",
+  "version": "2.0.0",
+  "description": "Pack your codebase into an AI-friendly file (Rust implementation of Repomix)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sopaco/repomix-rs.git"
+  },
+  "homepage": "https://github.com/sopaco/repomix-rs#readme",
+  "bugs": {
+    "url": "https://github.com/sopaco/repomix-rs/issues"
+  },
+  "keywords": [
+    "repomix",
+    "codebase",
+    "llm",
+    "ai",
+    "generative-ai",
+    "rust"
+  ],
+  "type": "module",
+  "bin": {
+    "repomix": "bin/repomix.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "repomix-rs-linux-x64": "2.0.0",
+    "repomix-rs-linux-arm64": "2.0.0",
+    "repomix-rs-darwin-x64": "2.0.0",
+    "repomix-rs-darwin-arm64": "2.0.0",
+    "repomix-rs-win32-x64": "2.0.0"
+  }
+}

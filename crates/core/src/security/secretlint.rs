@@ -26,7 +26,7 @@ fn build_secret_rules() -> Vec<SecretRule> {
             id: "generic-api-key".to_string(),
             name: "Generic API Key".to_string(),
             pattern: safe_compile(
-                r#"(?i)(api[_-]?key|apikey)\s*[:=]\s*['"][^'"]+['"]"#,
+                r#"(?i)(api[_-]?key|apikey)\s*[:=]\s*(?:['"][^'"]+['"]|[^\s#'"]+)"#,
                 "generic-api-key",
             ),
             // 对引号内候选值计熵；2.5 可拦截 "secret123" 等弱口令，同时过滤 "aaaa"
@@ -217,12 +217,142 @@ fn extract_assign_quoted_value(line: &str) -> Option<&str> {
     Some(&rest[..end])
 }
 
+/// 从 `.env` 风格的无引号赋值（`KEY=value`）中提取秘密候选值。
+fn extract_assign_unquoted_value(line: &str) -> Option<&str> {
+    let assign_pos = line
+        .char_indices()
+        .find(|(_, c)| *c == '=' || *c == ':')
+        .map(|(i, _)| i)?;
+    let rest = line[assign_pos + 1..].trim_start();
+    if rest.is_empty() {
+        return None;
+    }
+    let first = rest.chars().next()?;
+    if first == '"' || first == '\'' {
+        return None;
+    }
+    let end = rest
+        .find(|c: char| c.is_whitespace() || c == '#')
+        .unwrap_or(rest.len());
+    let value = &rest[..end];
+    if value.is_empty() { None } else { Some(value) }
+}
+
+/// 从赋值行提取秘密候选值（引号或无引号）。
+fn extract_assign_value(line: &str) -> Option<&str> {
+    extract_assign_quoted_value(line).or_else(|| extract_assign_unquoted_value(line))
+}
+
+/// 路径段（小写）是否属于 Android / iOS / KMP / Web 测试或夹具目录。
+fn path_has_test_segment(path: &Path) -> bool {
+    const SEGMENTS: &[&str] = &[
+        // Android / JVM
+        "androidtest",
+        "androidunittest",
+        "androidinstrumentedtest",
+        "robolectric",
+        // Kotlin Multiplatform
+        "commontest",
+        "iostest",
+        "jvmtest",
+        "jstest",
+        "nativetest",
+        "watchostest",
+        "tvostest",
+        "macostest",
+        "iosappiumtest",
+        // Web
+        "__tests__",
+        "__mocks__",
+        "__snapshots__",
+        "e2e",
+        // Shared fixtures
+        "fixtures",
+        "testdata",
+        "test-data",
+        "testresources",
+        "tests",
+    ];
+
+    path.components().any(|c| {
+        matches!(c, std::path::Component::Normal(s) if {
+            let seg = s.to_string_lossy().to_ascii_lowercase();
+            SEGMENTS.contains(&seg.as_str())
+                || (seg.ends_with("tests") && seg.len() > "tests".len())
+        })
+    })
+}
+
+/// 是否 Maven/Gradle 标准测试源码目录 `src/test` 或 `src/androidTest`。
+fn path_is_jvm_test_source_root(path: &Path) -> bool {
+    let segments: Vec<_> = path
+        .components()
+        .filter_map(|c| match c {
+            std::path::Component::Normal(s) => Some(s.to_string_lossy().to_ascii_lowercase()),
+            _ => None,
+        })
+        .collect();
+
+    segments
+        .windows(2)
+        .any(|w| w[0] == "src" && matches!(w[1].as_str(), "test" | "androidtest"))
+}
+
+/// 按文件名识别测试/夹具文件（Android、iOS、KMP、Web 等）。
+fn is_test_fixture_file_name(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    let lower = name.to_ascii_lowercase();
+
+    // Web: *.test.* / *.spec.*
+    if lower.contains(".test.") || lower.contains(".spec.") {
+        return true;
+    }
+
+    // Python pytest / Go
+    if (lower.starts_with("test_") || lower.ends_with("_test"))
+        && matches!(
+            lower.rsplit('.').next(),
+            Some("py" | "go" | "js" | "ts" | "jsx" | "tsx" | "mjs" | "cjs")
+        )
+    {
+        return true;
+    }
+
+    // Android / JVM: *Test.java, *Tests.kt, ...
+    for ext in ["java", "kt", "kts"] {
+        if lower.ends_with(&format!("test.{ext}"))
+            || lower.ends_with(&format!("tests.{ext}"))
+            || lower.ends_with(&format!("instrumentedtest.{ext}"))
+        {
+            return true;
+        }
+    }
+
+    // iOS / Swift
+    for suffix in ["tests.swift", "test.swift", "spec.swift"] {
+        if lower.ends_with(suffix) {
+            return true;
+        }
+    }
+
+    false
+}
+
+/// 短期方案：按路径/文件名跳过测试与夹具（补充 Rust `#[test]` 区域跟踪）。
+pub(crate) fn is_test_fixture_path(path: &Path) -> bool {
+    is_test_fixture_file_name(path)
+        || path_has_test_segment(path)
+        || path_is_jvm_test_source_root(path)
+}
+
 /// 返回用于熵计算 / allowlist 判断的候选子串（非整行）。
 fn secret_candidate<'a>(line: &'a str, rule: &SecretRule) -> &'a str {
     if matches!(
         rule.id.as_str(),
         "generic-api-key" | "generic-secret" | "generic-token" | "aws-secret-key"
-    ) && let Some(value) = extract_assign_quoted_value(line)
+    ) && let Some(value) = extract_assign_value(line)
     {
         return value;
     }
@@ -230,6 +360,10 @@ fn secret_candidate<'a>(line: &'a str, rule: &SecretRule) -> &'a str {
 }
 
 pub fn scan_file_content(content: &str, file_path: &Path) -> Vec<SuspiciousFileResult> {
+    if is_test_fixture_path(file_path) {
+        return Vec::new();
+    }
+
     let rules = get_secret_rules();
     let mut results = Vec::new();
     let mut test_state = TestRegionState::default();
@@ -344,6 +478,28 @@ mod tests {
     }
 
     #[test]
+    fn test_unquoted_api_key_in_env_format() {
+        let content = "API_KEY=sk-1234567890abcdef1234567890abcdef\n";
+        let results = scan_file_content(content, Path::new(".env"));
+        assert!(
+            results.iter().any(|r| r.rule_id == "generic-api-key"),
+            "unquoted .env API key should match: {:?}",
+            results
+        );
+    }
+
+    #[test]
+    fn test_unquoted_api_key_low_entropy_filtered() {
+        let content = "API_KEY=your-api-key\n";
+        let results = scan_file_content(content, Path::new(".env"));
+        assert!(
+            results.is_empty(),
+            "allowlisted placeholder should be skipped: {:?}",
+            results
+        );
+    }
+
+    #[test]
     fn test_test_function_body_skipped() {
         let content = r##"
 fn production() {
@@ -408,5 +564,47 @@ mod tests {
             "integration_test.rs fixtures should be skipped, got: {:?}",
             results
         );
+    }
+
+    #[test]
+    fn test_fixture_path_web_jest() {
+        let content = r#"const apiKey = "sk-1234567890abcdef1234567890abcdef";"#;
+        let path = Path::new("src/__tests__/api.test.ts");
+        assert!(scan_file_content(content, path).is_empty());
+    }
+
+    #[test]
+    fn test_fixture_path_android_instrumented() {
+        let content = r#"apiKey = "sk-1234567890abcdef1234567890abcdef""#;
+        let path = Path::new("app/src/androidTest/java/com/example/LoginTest.kt");
+        assert!(scan_file_content(content, path).is_empty());
+    }
+
+    #[test]
+    fn test_fixture_path_kmp_common_test() {
+        let content = r#"val token = "sk-1234567890abcdef1234567890abcdef""#;
+        let path = Path::new("shared/src/commonTest/kotlin/AuthTest.kt");
+        assert!(scan_file_content(content, path).is_empty());
+    }
+
+    #[test]
+    fn test_fixture_path_ios_swift() {
+        let content = r#"let apiKey = "sk-1234567890abcdef1234567890abcdef""#;
+        let path = Path::new("MyAppTests/ApiKeyTests.swift");
+        assert!(scan_file_content(content, path).is_empty());
+    }
+
+    #[test]
+    fn test_fixture_path_pytest_module() {
+        let content = "API_KEY=sk-1234567890abcdef1234567890abcdef\n";
+        let path = Path::new("tests/test_api.py");
+        assert!(scan_file_content(content, path).is_empty());
+    }
+
+    #[test]
+    fn test_production_path_still_scanned() {
+        let content = "API_KEY=sk-1234567890abcdef1234567890abcdef\n";
+        let path = Path::new("src/config/app.py");
+        assert!(!scan_file_content(content, path).is_empty());
     }
 }

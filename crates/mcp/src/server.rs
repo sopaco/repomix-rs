@@ -16,8 +16,11 @@ use tokio::sync::Mutex;
 use repomix_config::schema::RepomixConfig;
 use repomix_core::packager::{NoopProgress, PackResult, pack};
 
-use crate::helpers::{parse_style, split_csv, validate_remote_url};
-use crate::output_path::{make_mcp_output_path, validate_mcp_output_path};
+use crate::helpers::validate_remote_url;
+use crate::output_path::{
+    cleanup_stale_mcp_outputs, make_mcp_output_path, validate_mcp_output_path,
+};
+pub use crate::params::{PackCodebaseParams, PackRemoteRepositoryParams, PackSharedParams};
 
 // ===== Result / metrics structs =====
 
@@ -27,7 +30,10 @@ pub struct PackToolResult {
     pub result: String,
     pub directory_structure: String,
     pub output_id: String,
+    /// 主输出文件路径（分片时为第一片）。
     pub output_file_path: String,
+    /// 全部输出文件路径（分片时有多条）。
+    pub output_paths: Vec<String>,
     pub total_files: usize,
     pub total_tokens: usize,
 }
@@ -57,37 +63,6 @@ impl From<&PackResult> for PackMetrics {
 }
 
 // ===== Tool parameter types =====
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-pub struct PackCodebaseParams {
-    /// Directory to pack (absolute path). Defaults to current working directory.
-    #[serde(default)]
-    pub directory: Option<String>,
-    /// Enable Tree-sitter compression to extract code signatures.
-    #[serde(default)]
-    pub compress: Option<bool>,
-    /// Comma-separated include patterns, e.g. "*.rs,*.toml".
-    #[serde(default)]
-    pub include_patterns: Option<String>,
-    /// Comma-separated ignore patterns, e.g. "target/**,tests/**".
-    #[serde(default)]
-    pub ignore_patterns: Option<String>,
-    /// Number of top files to include in metrics breakdown.
-    #[serde(default)]
-    pub top_files_length: Option<usize>,
-    /// Output style: xml | markdown | plain | json. Default: xml.
-    #[serde(default)]
-    pub style: Option<String>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-pub struct PackRemoteRepositoryParams {
-    /// Git remote URL (https://... or git@...).
-    pub url: String,
-    /// Output style: xml | markdown | plain | json. Default: xml.
-    #[serde(default)]
-    pub style: Option<String>,
-}
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ReadRepomixOutputParams {
@@ -174,6 +149,7 @@ fn pack_tool_result(result: &PackResult, output_id: &str, description: &str) -> 
         directory_structure: result.directory_structure.clone(),
         output_id: output_id.to_string(),
         output_file_path: result.output_paths.first().cloned().unwrap_or_default(),
+        output_paths: result.output_paths.clone(),
         total_files: result.total_files,
         total_tokens: result.total_tokens,
     }
@@ -228,15 +204,7 @@ impl RepomixMcpServer {
                 ErrorData::invalid_params("directory not provided and CWD unavailable", None)
             })?;
 
-        let style = parse_style(p.style.as_deref())?;
-        let partial = repomix_config::load::PartialConfig {
-            include: p.include_patterns.as_deref().map(|s| split_csv(Some(s))),
-            ignore: p.ignore_patterns.as_deref().map(|s| split_csv(Some(s))),
-            compress: p.compress,
-            top_files_length: p.top_files_length,
-            style: Some(style),
-            ..Default::default()
-        };
+        let partial = p.shared.into_mcp_overrides()?.into_partial_config();
         let mut config = load_mcp_config(partial)?;
 
         let mcp_output = make_mcp_output_path(&config.output.style)?;
@@ -276,10 +244,7 @@ impl RepomixMcpServer {
         repomix_core::git::remote::clone_remote_repo(&p.url, &temp_dir)
             .map_err(|e| ErrorData::internal_error(format!("git clone failed: {}", e), None))?;
 
-        let partial = repomix_config::load::PartialConfig {
-            style: Some(parse_style(p.style.as_deref())?),
-            ..Default::default()
-        };
+        let partial = p.shared.into_mcp_overrides()?.into_partial_config();
         let mut config = load_mcp_config(partial)?;
         let mcp_output = make_mcp_output_path(&config.output.style)?;
         config.output.file_path = mcp_output.path.to_string_lossy().to_string();
@@ -388,6 +353,8 @@ impl ServerHandler for RepomixMcpServer {
 pub async fn run_stdio_server() -> Result<()> {
     use rmcp::ServiceExt;
     use rmcp::transport::stdio;
+
+    cleanup_stale_mcp_outputs();
 
     let server = RepomixMcpServer::new();
     let service = server

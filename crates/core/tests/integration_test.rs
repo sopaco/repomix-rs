@@ -151,6 +151,18 @@ fn test_secretlint_detects_api_key() {
 }
 
 #[test]
+fn test_secretlint_detects_unquoted_api_key_in_env() {
+    use repomix_core::security::secretlint::scan_file_content;
+    use std::path::Path;
+
+    let content = "API_KEY=sk-1234567890abcdef1234567890abcdef\n";
+    let results = scan_file_content(content, Path::new(".env"));
+
+    assert!(!results.is_empty());
+    assert!(results.iter().any(|r| r.rule_id == "generic-api-key"));
+}
+
+#[test]
 fn test_secretlint_detects_password() {
     use repomix_core::security::secretlint::scan_file_content;
     use std::path::Path;
@@ -635,6 +647,54 @@ fn test_repomix_output_artifacts_excluded_from_search() {
 
     assert!(names.iter().any(|n| n == "source.rs"));
     assert!(!names.iter().any(|n| n.starts_with("repomix-output.")));
+}
+
+/// 回归：默认忽略依赖锁文件（Rust / npm / yarn / pnpm / bun）。
+#[test]
+fn test_lock_files_excluded_from_search() {
+    use repomix_core::file::search::search_files;
+    use std::fs;
+
+    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    let tmpdir = std::env::temp_dir().join(format!("repomix_lock_ignore_{}", n));
+    let _ = fs::remove_dir_all(&tmpdir);
+    fs::create_dir_all(&tmpdir).unwrap();
+    fs::write(tmpdir.join("main.rs"), "fn main() {}\n").unwrap();
+    for lock in [
+        "Cargo.lock",
+        "package-lock.json",
+        "yarn.lock",
+        "pnpm-lock.yaml",
+        "bun.lock",
+        "bun.lockb",
+        "poetry.lock",
+        "Pipfile.lock",
+        "Gemfile.lock",
+        "composer.lock",
+        "go.sum",
+        "pubspec.lock",
+        "mix.lock",
+        "Podfile.lock",
+        "Package.resolved",
+        "gradle.lockfile",
+    ] {
+        fs::write(tmpdir.join(lock), "lock data\n").unwrap();
+    }
+
+    let config = RepomixConfig::default();
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let result = rt
+        .block_on(search_files(std::slice::from_ref(&tmpdir), &config))
+        .unwrap();
+
+    let names: Vec<String> = result
+        .file_paths
+        .iter()
+        .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
+        .collect();
+
+    assert_eq!(names, vec!["main.rs".to_string()]);
 }
 
 /// 回归：git sort 使用仓库相对路径匹配变更频率。

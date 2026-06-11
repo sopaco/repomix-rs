@@ -142,10 +142,22 @@ pub async fn pack(
     let collect_result = file::collect::collect_files(search_result.file_paths, &config).await?;
 
     progress.on_progress("Running security checks...");
-    let validation = security::validate::validate_file_safety(&collect_result.raw_files, &config)?;
+    let raw_files_for_validate = collect_result.raw_files.clone();
+    let config_for_validate = config.clone();
+    let validation = tokio::task::spawn_blocking(move || {
+        security::validate::validate_file_safety(&raw_files_for_validate, &config_for_validate)
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("validate_file_safety task join failed: {}", e))??;
 
     progress.on_progress("Processing file contents...");
-    let mut processed = file::process::process_files(&collect_result.raw_files, &config)?;
+    let raw_files = collect_result.raw_files;
+    let config_for_process = config.clone();
+    let mut processed = tokio::task::spawn_blocking(move || {
+        file::process::process_files(&raw_files, &config_for_process)
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("process_files task join failed: {}", e))??;
 
     // Sort by git changes if enabled
     if config.output.git.sort_by_changes {

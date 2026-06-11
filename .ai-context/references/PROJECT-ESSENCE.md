@@ -26,7 +26,7 @@ Sending large projects to an LLM requires either manually copying files or writi
 - Secretlint security scan: secret-bearing files excluded from output.
 - Git-aware: optional diff, log, and sort-by-change-frequency (uses system `git`).
 - Parallel file processing via Rayon; async I/O via Tokio.
-- Layered config: defaults → global `~/.config/repomix/` → project `./` → CLI flags.
+- Layered config: defaults → global `~/.repomix/repomix.config.json` → project `./repomix.config.json` → CLI flags.
 - Two interfaces: standalone CLI binary and MCP stdio server.
 
 ## Core Constraints

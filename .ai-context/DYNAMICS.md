@@ -4,7 +4,7 @@
 
 ## Active Development
 
-- **Status: 0.1.0** — CLI, library API, and MCP server are usable. Configuration schema may still change before 1.0.
+- **Status: 2.0.0** — CLI, library API, and MCP server are usable. Configuration schema may still change before 1.0.
 
 ## Active Constraints
 

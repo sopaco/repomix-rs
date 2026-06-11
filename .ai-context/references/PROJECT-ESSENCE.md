@@ -34,4 +34,4 @@ Sending large projects to an LLM requires either manually copying files or writi
 - **All processing runs entirely in memory.** No streaming, no mmap, no zero-copy pipe. RAM usage ≈ sum of all file contents. This is a soft ceiling for mono-repos at GB scale.
 - **Git is an external dependency.** The `git` CLI must be on `PATH` for diff/log/sorter features. Non-git directories degrade gracefully.
 - **C# tree-sitter compression is disabled** (ABI mismatch in `tree-sitter-c-sharp` 0.23 with bundled queries). Known issue, fix tracked in `crates/core/Cargo.toml`.
-- **Status: 0.1.0 — schema and API surface are still evolving.**
+- **Status: 2.0.0 — schema and API surface are still evolving.**

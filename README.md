@@ -2,7 +2,7 @@
 
 A Rust implementation of [Repomix](https://github.com/yamadashy/repomix) — a tool that packs your entire codebase into a single, AI-friendly file. It is a drop-in replacement written for speed, safety, and embedding into AI agents via the Model Context Protocol (MCP).
 
-> **Status:** `0.1.0` — under active development. CLI, library, and MCP server are usable; configuration schema may still evolve.
+> **Status:** `2.0.0` — under active development. CLI, library, and MCP server are usable; configuration schema may still evolve.
 
 ---
 

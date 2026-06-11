@@ -32,7 +32,6 @@ impl RepomixConfig {
     }
 
     /// 从文件加载配置
-    /// B5 修复：返回 Result 而非静默忽略错误
     pub fn load_from_file(path: &Path) -> Result<Option<Self>> {
         if !path.exists() {
             return Ok(None);
@@ -159,12 +158,7 @@ impl RepomixConfig {
         self.merge_global(other);
     }
 
-    /// 合并CLI参数
-    ///
-    /// P0 修复（Bug #1）：include / ignore 改为追加模式，与
-    /// `merge_global` / `merge_local` 保持一致。CLI 多次传 `--include` 时
-    /// 也会累积（外层 clap 通过 `Vec<String>` 收集），避免覆盖配置文件
-    /// 中已有的 include / ignore 模式。
+    /// 合并 CLI 参数（include / ignore 追加模式，与 `merge_global` / `merge_local` 一致）
     pub(crate) fn merge_cli(&mut self, overrides: PartialConfig) {
         if let Some(mut include) = overrides.include {
             self.include.append(&mut include);

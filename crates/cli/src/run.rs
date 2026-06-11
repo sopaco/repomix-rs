@@ -7,7 +7,6 @@ use crate::prompts;
 
 pub async fn init_config() -> Result<()> {
     let root_dir = std::env::current_dir()?;
-    // 修复：不再打印重复的 "Welcome" 标题，prompts 内部已打印
     prompts::create_config_file(&root_dir);
     prompts::create_ignore_file(&root_dir);
     Ok(())
@@ -22,9 +21,7 @@ pub async fn run_pack(cli: crate::Cli) -> Result<()> {
     let remote_url = cli.remote.clone();
     let root_path = cli.root.clone();
 
-    // P1 修复（Bug #3）：远程仓库用唯一临时目录，避免全局固定路径冲突
-    // P1 修复（Bug #6）：通过 RAII guard 在 `run_pack` 退出时清理临时目录，
-    // 避免在多次 `--remote` 调用下积累 /tmp 中的仓库副本。
+    // 远程仓库使用唯一临时目录，退出时由 RAII guard 清理。
     let (root_dir, _temp_dir_guard) = if let Some(remote_url) = &remote_url {
         let temp_dir = make_unique_temp_dir("repomix_remote")
             .map_err(|e| anyhow::anyhow!("无法创建临时目录: {}", e))?;
@@ -87,11 +84,7 @@ fn build_config(
     cli: &crate::Cli,
     config_root: &std::path::Path,
 ) -> Result<RepomixConfig> {
-    // P1 修复（Bug #3）：配置根目录（`repomix.config.json` 所在）必须使用
-    // **用户当前工作目录**，而不是 pack 根目录。`--remote` 模式下 pack 根目录
-    // 是临时克隆目录，那里没有用户的项目级配置。
-    // 调用方应传入 `std::env::current_dir()?` 作为 config_root。
-    // B6 修复：使用 RepomixConfig::load 统一加载流程
+    // 配置根目录使用用户当前工作目录，而非 pack 根目录（`--remote` 时为临时克隆目录）。
     // 默认值 → 全局配置 → 项目配置 → CLI 参数
     let partial = repomix_config::load::PartialConfig {
         include: cli.include.as_ref().map(|s| s.split(',').map(|p| p.trim().to_string()).collect()),
@@ -117,9 +110,6 @@ fn build_config(
 }
 
 /// 创建唯一临时目录：PID + 纳秒时间戳 + 哈希随机后缀
-///
-/// P1 修复（Bug #3）：避免全局固定路径冲突，
-/// 防止多用户/多实例/并发调用相互覆盖对方数据。
 fn make_unique_temp_dir(prefix: &str) -> std::io::Result<std::path::PathBuf> {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};

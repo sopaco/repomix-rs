@@ -290,8 +290,7 @@ fn chdir_lock() -> std::sync::MutexGuard<'static, ()> {
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-/// P2 修复（Bug #7）回归测试：top_files_length 真的影响 calculate_metrics 输出。
-/// 之前该字段被全链路传递但从未被消费。
+/// `top_files_length` 影响 `calculate_metrics` 输出。
 #[tokio::test]
 async fn test_top_files_length_is_respected_bug7() {
     use repomix_core::metrics::calculate::calculate_metrics;
@@ -329,12 +328,7 @@ async fn test_top_files_length_is_respected_bug7() {
     assert!(result.top_files_by_tokens.is_empty());
 }
 
-/// P2 修复（Bug #8）回归测试：默认 output.path 跟随 style 后缀。
-///
-/// 验证方式：root_dir 设为 tmpdir，但 `output.file_path` 保持 schema 默认值
-/// `"repomix-output.txt"`，pack 之后断言 disk 上写入了带正确后缀的文件
-/// （pack 内部在 `output.file_path` 仍是 schema 默认值时会动态改后缀）。
-/// 为避免污染 CWD，测试会预先 chdir 到一个隔离 tmpdir，结束后恢复。
+/// 默认 `output.file_path` 时，输出后缀跟随 style。
 #[tokio::test]
 async fn test_output_path_follows_style_bug8() {
     let _guard = chdir_lock();
@@ -397,7 +391,7 @@ async fn test_output_path_follows_style_bug8() {
     let _ = fs::remove_dir_all(&tmpdir);
 }
 
-/// P2 修复（Bug #8）回归测试：用户显式设置 file_path 时不被动态后缀覆盖。
+/// 用户显式设置 `file_path` 时不被动态后缀覆盖。
 #[tokio::test]
 async fn test_output_path_user_override_preserved_bug8() {
     let _guard = chdir_lock();
@@ -443,14 +437,7 @@ async fn test_output_path_user_override_preserved_bug8() {
     let _ = fs::remove_dir_all(&tmpdir);
 }
 
-// ===================== Bug-fix regression tests (round 2) =====================
-
-/// P0 修复（Bug #2）回归测试：C# 不再出现在 `get_supported_languages` 中。
-///
-/// 原因：`tree-sitter-c-sharp` 0.23 暴露的 language ABI version = 15，
-/// 而 `queries/c_sharp.scm` 是按 ABI 14 编写的，`Query::new` 会失败。
-/// 临时禁用 C# 注册以避免运行时静默失效。重新启用时需要同时升级
-/// `c_sharp.scm` 到 ABI 15 语法并恢复 `Cargo.toml` 依赖。
+/// C# 暂不支持（tree-sitter-c-sharp 0.23 ABI 与 queries/c_sharp.scm 不兼容）。
 #[test]
 fn test_csharp_disabled_due_to_abi_mismatch_bug2() {
     use repomix_core::tree_sitter::languages::get_supported_languages;
@@ -471,8 +458,7 @@ fn test_csharp_disabled_due_to_abi_mismatch_bug2() {
     );
 }
 
-/// P1 修复（Bug #4）回归测试：XML 输出必须转义文件内容中的
-/// XML 保留字符（`& < >`），防止 `</file>` 提前闭合等结构破坏。
+/// XML 输出须转义文件内容中的 XML 保留字符（`& < >`）。
 #[test]
 fn test_xml_output_escapes_file_content_bug4() {
     use repomix_core::output::styles::xml::generate_xml;
@@ -528,7 +514,6 @@ fn test_xml_output_escapes_file_content_bug4() {
         output
     );
     // 真正的 `</file>` 关闭标签只能来自模板（这里 2 个文件 → 2 个关闭）
-    // 修复前 `before </file>` 会让 XML 解析器认为第一个文件已经结束。
     let file_close_count = output.matches("</file>").count();
     assert_eq!(
         file_close_count, 2,
@@ -537,12 +522,7 @@ fn test_xml_output_escapes_file_content_bug4() {
     );
 }
 
-/// P0 修复（Bug #1）回归测试：含非 ASCII 字符的文件被正确读取，
-/// 不再因 `had_errors` 误判而跳过。
-///
-/// 关键点：使用 GBK 编码的"中文"内容（`\xC4\xE3\xBA\xC3` = "你好"），
-/// 修复前 `chardetng` 路径会因 `had_errors=true` 跳过该文件，修复后
-/// 应正常解码为 "你好"。
+/// 含非 ASCII 字符的文件应被正确读取，不因 `had_errors` 误判而跳过。
 #[tokio::test]
 async fn test_encoding_detect_keeps_non_ascii_files_bug1() {
     use repomix_core::file::collect::collect_files;

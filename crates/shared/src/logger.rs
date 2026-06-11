@@ -3,9 +3,7 @@ use tracing_subscriber::{fmt, EnvFilter};
 
 /// 初始化全局 tracing subscriber
 ///
-/// P3 修复（Bug #15）：用 try_init() 替代 init()，
-/// 当此 crate 被嵌入已有 subscriber 的 host 应用时（如集成测试、库 API 场景），
-/// 不会 panic，只是静默跳过。
+/// 使用 `try_init()` 而非 `init()`，避免在已有 subscriber 的 host 应用中 panic。
 pub fn init_logger(verbose: bool) {
     let level = if verbose {
         Level::DEBUG

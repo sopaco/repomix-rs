@@ -1,12 +1,11 @@
-//! 配置层回归测试。
+//! 配置层测试。
 
 use std::path::Path;
 
 use crate::load::PartialConfig;
 use crate::schema::RepomixConfig;
 
-/// P0 修复（Bug #1）回归测试：CLI `--include` / `--ignore` 应追加
-/// 到已有配置上，而不是覆盖全局/项目配置中已有的 include / ignore。
+/// CLI `--include` / `--ignore` 应追加到已有配置，而非覆盖。
 #[test]
 fn test_merge_cli_appends_includes_bug1() {
     let mut config = RepomixConfig::default();
@@ -33,7 +32,7 @@ fn test_merge_cli_appends_includes_bug1() {
     assert!(config.ignore.custom_ignore.contains(&"**/*.bak".to_string()));
 }
 
-/// P0 修复（Bug #1）回归测试：CLI 未传 include / ignore 时不污染配置。
+/// CLI 未传 include / ignore 时不改变已有配置。
 #[test]
 fn test_merge_cli_none_preserves_existing_bug1() {
     let mut config = RepomixConfig::default();
@@ -47,14 +46,14 @@ fn test_merge_cli_none_preserves_existing_bug1() {
     assert_eq!(config.ignore.custom_ignore, vec!["target/**".to_string()]);
 }
 
-/// 验证默认 file_path 是 schema 默认值（用于 B8 回归测试前置）。
+/// 验证默认 file_path 是 schema 默认值。
 #[test]
 fn test_default_file_path_is_bug8_baseline() {
     let config = RepomixConfig::default();
     assert_eq!(config.output.file_path, "repomix-output.txt");
 }
 
-/// 验证 `load` 在空 CWD 下不会 panic（用于回归测试 config 加载入口）。
+/// 验证 `load` 在空 CWD 下不会 panic。
 #[test]
 fn test_load_with_empty_cwd_does_not_panic() {
     let result = RepomixConfig::load(None, Path::new("/tmp"));

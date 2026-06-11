@@ -24,7 +24,6 @@ pub fn generate_plain(
     output.push_str("====================================\n\n");
     output.push_str("This file contains the packed representation of the repository.\n\n");
 
-    // B3 修复：header_text/instruction 作为独立的头部输出
     let header_text = format_header(header);
     if !header_text.is_empty() {
         output.push_str("Custom Instructions\n");
@@ -47,7 +46,6 @@ pub fn generate_plain(
         output.push_str("-----\n\n");
         for file in files {
             let path_str = display_path(&file.path, pack_root);
-            // P2 修复（Bug #12）：plain 风格转义控制字符，防止换页/退格破坏输出
             let path_safe = path_str.replace(['\n', '\r', '\t'], " ");
             let line_count = line_counts.get(&path_str).unwrap_or(&0);
             if config.output.parsable_style {

@@ -17,11 +17,7 @@ pub fn process_files(
 ) -> Result<Vec<ProcessedFile>> {
     let options = ProcessContentOptions::from_config(config);
 
-    // 创建 token 计数器
-    // P1 修复（Bug #5）：`tiktoken_rs::o200k_base()` 等初始化需要下载 vocabulary 文件
-    // （tiktoken-rs 0.5 内置），在离线 / 受限网络 / CI 环境下可能失败。失败时
-    // 当前会静默降级到 `split_whitespace()`，对 CJK 等无空白分隔的语言估算偏差巨大
-    // （可能低 10-50 倍）。现在失败时打印明确 warning，让用户知道 token 统计不准。
+    // 创建 token 计数器；初始化失败时降级到空白分隔估算并打印 warning。
     let token_counter = match TokenCounter::new(&config.token_count.encoding) {
         Ok(c) => Some(c),
         Err(e) => {

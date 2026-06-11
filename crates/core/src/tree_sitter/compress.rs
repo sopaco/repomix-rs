@@ -7,9 +7,7 @@ use crate::tree_sitter::languages::LanguageConfig;
 
 /// 压缩单个文件：使用 tree-sitter 提取捕获节点，输出保留源码顺序的签名列表
 ///
-/// P1 修复（Bug #5）：用 `cursor.captures(...)` 替代 `cursor.matches(...)`，
-/// tree-sitter 的 captures API 按源码位置**严格有序**迭代捕获节点，
-/// 避免当 query 包含多个 capture 名时不同 match 之间乱序。
+/// 使用 `cursor.captures(...)` 按源码位置有序迭代捕获节点。
 pub fn compress_file(
     content: &str,
     file_path: &Path,

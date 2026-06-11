@@ -21,8 +21,7 @@ struct JsonOutput {
 
 #[derive(Serialize, Deserialize)]
 struct JsonMetadata {
-    /// P3 修复（Bug #14）：packed_at 默认启用，可通过 output.json.no_timestamp 关闭
-    /// 关闭后两次打包的 JSON 可保持完全一致（用于版本控制/缓存）
+    /// 默认启用；可通过 `output.json.no_timestamp` 关闭以保持输出可复现
     #[serde(skip_serializing_if = "Option::is_none")]
     packed_at: Option<String>,
     total_files: usize,
@@ -49,7 +48,6 @@ pub fn generate_json(
     git_log_content: &Option<String>,
     token_count_tree: Option<&str>,
 ) -> String {
-    // Bug #14：检查 no_timestamp 标志（默认 false，保持行为兼容）
     let include_timestamp = !config.output.json.no_timestamp;
     let metadata = JsonMetadata {
         packed_at: if include_timestamp {
@@ -61,7 +59,6 @@ pub fn generate_json(
         total_tokens: files.iter().map(|f| f.token_count).sum(),
     };
 
-    // B3 修复：header_text/instruction 作为独立的顶级字段输出
     let header_text = format_header(header);
     let custom_instructions = if header_text.is_empty() {
         None

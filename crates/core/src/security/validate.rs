@@ -19,14 +19,11 @@ pub fn validate_file_safety(
         });
     }
 
-    // P1 修复（Bug #6）：scan_file_content 内部使用 OnceLock 全局缓存，
-    // 避免 rayon worker 重复构造 7 个 regex
     let suspicious: Vec<SuspiciousFileResult> = raw_files
         .par_iter()
         .flat_map(|file| scan_file_content(&file.content, &file.path))
         .collect();
 
-    // P1 修复（Bug #4）：用 HashSet 做 O(1) 查找替代 Vec::contains O(N×M)
     let suspicious_paths: HashSet<&PathBuf> = suspicious.iter().map(|s| &s.path).collect();
     let safe_paths: Vec<PathBuf> = raw_files
         .iter()

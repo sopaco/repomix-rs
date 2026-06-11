@@ -186,7 +186,7 @@ impl Default for GitOutputConfig {
     }
 }
 
-/// P3 修复（Bug #14）：JSON 输出专属配置
+/// JSON 输出专属配置
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct JsonOutputConfig {

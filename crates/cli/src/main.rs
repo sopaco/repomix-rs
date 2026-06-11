@@ -98,8 +98,7 @@ struct Cli {
     verbose: u8,
 }
 
-/// P2 修复（Bug #9）：用 clap ValueEnum 让 style 自动校验，
-/// `--style yaml` 等无效值会被 clap 拒绝并打印 usage。
+/// CLI 输出风格；无效值由 clap 拒绝并打印 usage。
 #[derive(Debug, Clone, Copy, ValueEnum)]
 #[clap(rename_all = "lower")]
 pub enum CliOutputStyle {

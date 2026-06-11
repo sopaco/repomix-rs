@@ -1,7 +1,7 @@
 [package]
 name = "repomix-core"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 repomix-shared = { path = "../shared" }
@@ -36,6 +36,6 @@ tree-sitter-c = "0.23"
 tree-sitter-cpp = "0.23"
 tree-sitter-ruby = "0.23"
 tree-sitter-php = "0.23"
-# P0 修复（Bug #2）：tree-sitter-c-sharp 0.23 的 ABI 与 queries/c_sharp.scm 不兼容，
-# 暂时移除依赖。重新启用 C# 压缩时恢复该行。
+# tree-sitter-c-sharp 0.23 的 ABI 与 queries/c_sharp.scm 不兼容，暂时移除依赖。
+# 重新启用 C# 压缩时恢复该行。
 # tree-sitter-c-sharp = "0.23"

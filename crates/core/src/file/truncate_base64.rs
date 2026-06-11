@@ -21,7 +21,7 @@ pub fn truncate_base64(content: &str) -> String {
     result.join("\n")
 }
 
-/// P2 修复（Bug #8）：改进 base64 检测，减少误判
+/// 改进 base64 检测，减少误判
 ///
 /// 检测条件（全部满足才视为 base64）：
 /// 1. 长度 > 80 字符

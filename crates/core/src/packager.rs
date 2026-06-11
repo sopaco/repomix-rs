@@ -22,8 +22,7 @@ pub struct PackResult {
     pub total_tokens: usize,
     pub file_char_counts: HashMap<String, usize>,
     pub file_token_counts: HashMap<String, usize>,
-    /// P2 修复（Bug #7）：按 token 数降序的前 N 个文件，其中 N =
-    /// `RepomixConfig::output.top_files_length`。
+    /// 按 token 数降序的前 N 个文件（N = `RepomixConfig::output.top_files_length`）。
     pub top_files_by_tokens: Vec<(String, usize)>,
     pub git_diff_content: Option<String>,
     pub git_diff_token_count: usize,
@@ -113,10 +112,7 @@ pub async fn pack(
 ) -> Result<PackResult> {
     progress.on_progress("Starting pack...");
 
-    // P2 修复（Bug #8）：当 output.file_path 仍为 schema 默认值
-    // "repomix-output.txt" 时，根据实际 style 动态调整后缀，
-    // 避免 XML/Markdown/JSON 用户拿到一个误导性的 .txt 文件。
-    // 显式设置过 file_path 的用户不受影响。
+    // 默认 file_path 时根据 style 动态调整后缀；用户显式设置的路径不受影响。
     if config.output.file_path == "repomix-output.txt" {
         let ext = match config.output.style {
             OutputStyle::Xml => "xml",
@@ -270,7 +266,6 @@ fn filter_suspicious(
     processed: Vec<ProcessedFile>,
     validation: &ValidationResult,
 ) -> Vec<ProcessedFile> {
-    // B3 相关修复：使用集合进行高效路径比较
     let suspicious_paths: std::collections::HashSet<_> = validation.suspicious.iter().map(|s| &s.path).collect();
 
     processed

@@ -6,9 +6,6 @@ use repomix_shared::types::*;
 use crate::file::types::FileCollectOptions;
 
 /// 收集文件内容
-///
-/// P3 修复（Bug #11）：移除未使用的 `root_dirs` 参数（下划线前缀表示作者已意识到）。
-/// 该参数是设计残留：根目录信息已在调用方（packager）持有，此处不需要重复传递。
 pub async fn collect_files(
     file_paths: Vec<PathBuf>,
     config: &RepomixConfig,
@@ -42,8 +39,7 @@ pub async fn collect_files(
 
 /// 读取原始文件（带编码检测）
 ///
-/// P0 修复：合并二进制检测和内容读取为单次 I/O，
-/// 避免 TOCTOU 竞争和冗余文件打开。
+/// 合并二进制检测和内容读取为单次 I/O，避免 TOCTOU 竞争和冗余文件打开。
 fn read_raw_file(path: &PathBuf, max_file_size: u64) -> std::result::Result<RawFile, SkippedFileInfo> {
     // 检查文件大小
     let metadata = std::fs::metadata(path).map_err(|e| SkippedFileInfo {
@@ -132,12 +128,7 @@ fn decode_bytes(bytes: &[u8], path: &Path) -> std::result::Result<String, Skippe
     detector.feed(bytes, true);
     let encoding = detector.guess(None, true);
 
-    // P0 改进（Bug #1）：`encoding.decode` 返回的 `had_errors=true` 表示解码过程中
-    // 有字节被替换为 U+FFFD（replacement character），但 `decoded` 仍可能是可用
-    // 内容。**正确的"无法解码"判断应该是"输入非空但解码后为空"**：这种情况极少见
-    // （例如纯控制字符的二进制流），chardetng 误判为 ASCII，decode 后全被丢弃。
-    // 修复前用 `had_errors` 作为唯一判据会误跳过大量合法文件（实测含非 ASCII 字符
-    // 的 GBK/Latin1 文件经常 had_errors=true 但内容完全可用）。详见 #1。
+    // `had_errors` 不能作为"无法解码"的唯一判据；输入非空但解码后为空才应跳过。
     let (decoded, _, _had_errors) = encoding.decode(bytes);
     if decoded.is_empty() {
         Err(SkippedFileInfo {

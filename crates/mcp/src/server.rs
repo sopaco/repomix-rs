@@ -36,8 +36,7 @@ pub struct PackMetrics {
     pub total_characters: usize,
     pub file_token_counts: std::collections::HashMap<String, usize>,
     pub file_char_counts: std::collections::HashMap<String, usize>,
-    /// P2 修复（Bug #7）：按 token 数降序的前 N 个文件（路径, token）。
-    /// 该字段在 MCP 输出中暴露，使 `top_files_length` 配置真正生效。
+    /// 按 token 数降序的前 N 个文件（路径, token）。
     pub top_files_by_tokens: Vec<(String, usize)>,
 }
 
@@ -106,11 +105,7 @@ pub struct GrepRepomixOutputParams {
 
 // ===== helpers =====
 
-/// 解析输出风格。
-///
-/// P1 修复（Bug #5）：未知 style 字符串不再静默回退到 XML，
-/// 而是通过 `ErrorData::invalid_params` 让 MCP 客户端收到明确错误。
-/// 空值 / `None` 仍然按 XML 处理（默认值约定）。
+/// 解析输出风格；未知值返回 `invalid_params` 错误，空值默认 XML。
 fn parse_style(s: Option<&str>) -> Result<OutputStyle, ErrorData> {
     match s {
         None | Some("") | Some("xml") => Ok(OutputStyle::Xml),
@@ -128,9 +123,6 @@ fn parse_style(s: Option<&str>) -> Result<OutputStyle, ErrorData> {
 }
 
 /// 验证远程仓库 URL 的基本合法性。
-///
-/// P1 修复（Bug #5）：避免把空串 / 明显非 URL 的字符串传给 `git clone`
-/// 后收到泛化的 `internal_error`（对用户没有诊断价值）。
 fn validate_remote_url(url: &str) -> Result<(), ErrorData> {
     let trimmed = url.trim();
     if trimmed.is_empty() {
@@ -178,8 +170,7 @@ fn load_mcp_config(partial: repomix_config::load::PartialConfig) -> Result<Repom
     })
 }
 
-/// P0 修复（Bug #3）：使用 PID + 时间戳 + 随机后缀，
-/// 避免全局固定路径冲突（多用户/多实例/并发请求安全）。
+/// 创建唯一临时目录（PID + 时间戳 + 随机后缀）
 fn make_temp_dir(prefix: &str) -> Result<PathBuf> {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
@@ -203,13 +194,7 @@ fn make_temp_dir(prefix: &str) -> Result<PathBuf> {
     Ok(dir)
 }
 
-/// P1 修复（Bug #6）：RAII 临时目录守卫。
-///
-/// 在 MCP server 长期运行的场景下，`pack_codebase` / `pack_remote_repository`
-/// 频繁创建临时目录并写入输出文件；如果仅靠 `_temp_dir_owned: ()`
-/// 这样的"占位句柄"无法在错误路径上清理，会导致 `/tmp` 长期累积完整仓库副本。
-/// 守卫在 drop 时调用 `fs::remove_dir_all` 清理目录（best-effort：
-/// 失败仅打 warning，不影响主流程）。
+/// RAII 临时目录守卫；drop 时 best-effort 清理目录。
 struct TempDirGuard {
     path: PathBuf,
 }
@@ -368,8 +353,6 @@ impl RepomixMcpServer {
 
         let temp_dir = make_temp_dir("repomix_mcp_remote")
             .map_err(|e| ErrorData::internal_error(format!("create temp dir: {}", e), None))?;
-        // P1 修复（Bug #6）：通过 RAII guard 确保 temp_dir 在退出时清理，
-        // 避免在 MCP server 长期运行下积累 /tmp 中的仓库副本。
         let _temp_guard = TempDirGuard::new(temp_dir.clone());
 
         repomix_core::git::remote::clone_remote_repo(&p.url, &temp_dir)

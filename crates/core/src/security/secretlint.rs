@@ -12,8 +12,7 @@ pub struct SecretRule {
     pub allowlist: Vec<String>,
 }
 
-/// P1 修复（Bug #6）：secret 规则全局缓存（OnceLock），
-/// 避免每次扫描/每个 rayon worker 重新编译 7 个 Regex
+/// secret 规则全局缓存（OnceLock），避免每次扫描重新编译 Regex
 pub static SECRET_RULES: OnceLock<Vec<SecretRule>> = OnceLock::new();
 
 /// 获取 secret 规则的静态切片引用（首次调用时构造并缓存）
@@ -278,7 +277,6 @@ pub fn scan_file_content(content: &str, file_path: &Path) -> Vec<SuspiciousFileR
     results
 }
 
-/// P1 修复：把 entropy 计算函数 pub(crate) 化，供 validate.rs 复用
 pub(crate) fn calculate_entropy(s: &str) -> f64 {
     if s.is_empty() {
         return 0.0;

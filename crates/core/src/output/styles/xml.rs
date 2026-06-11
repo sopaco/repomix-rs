@@ -5,8 +5,7 @@ use repomix_shared::types::ProcessedFile;
 use crate::output::decorate::{OutputHeader, format_header};
 use crate::path_util::display_path;
 
-/// P2 修复（Bug #12）：对插入 XML 属性 / Markdown / Plain 的路径进行转义，
-/// 避免文件路径含 `& < > "` 时输出非法 XML/Markdown。
+/// 对插入 XML 属性 / Markdown / Plain 的路径进行转义
 fn xml_attr_escape(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -15,10 +14,7 @@ fn xml_attr_escape(s: &str) -> String {
         .replace('\'', "&apos;")
 }
 
-/// P1 修复（Bug #4）：对插入 XML 文本节点的文件内容做最小转义，
-/// 防止文件内容含 `& < >` 等 XML 保留字符时破坏整体 XML 结构
-/// （例如 `</file>` 提前闭合、`<unknown>` 被解释为标签等）。
-/// 保留换行/制表/回车等控制字符原样（不影响 XML 解析）。
+/// 对插入 XML 文本节点的文件内容做最小转义（保留换行/制表/回车）
 fn xml_text_escape(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -86,7 +82,6 @@ pub(crate) fn render_xml_part(
         output.push_str("</file_summary>\n\n");
     }
 
-    // B3 修复：header_text/instruction 作为独立的头部节点输出，而非附加到第一个文件
     if is_first {
         let header_text = format_header(header);
         if !header_text.is_empty() {
@@ -118,8 +113,6 @@ pub(crate) fn render_xml_part(
             } else {
                 output.push_str(&format!("<file path=\"{}\">\n", path_escaped));
             }
-            // P1 修复（Bug #4）：转义内容中的 XML 保留字符，避免 `<file>...&... </file>`
-            // 结构被内容里的 `</file>` 提前闭合或 `<unknown>` 误导 XML 解析器。
             output.push_str(&xml_text_escape(&file.content));
             output.push_str("\n</file>\n\n");
         }

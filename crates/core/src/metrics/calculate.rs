@@ -8,17 +8,11 @@ pub struct MetricsResult {
     pub total_tokens: usize,
     pub file_char_counts: HashMap<String, usize>,
     pub file_token_counts: HashMap<String, usize>,
-    /// P2 修复（Bug #7）：按 token 数降序排列的前 N 个文件，
-    /// 其中 N = `config.output.top_files_length`。
-    /// 之前该字段被全链路传递但从未被消费，用户在配置中设置无效。
+    /// 按 token 数降序排列的前 N 个文件（N = `config.output.top_files_length`）。
     pub top_files_by_tokens: Vec<(String, usize)>,
 }
 
-/// 计算指标
-///
-/// P2 修复（Bug #7）：消费 `config.output.top_files_length`，
-/// 按 token 数降序返回前 N 个文件列表（路径, token 数）。
-/// 该字段在 schema 中定义但之前从未被读取，导致用户设置无效果。
+/// 计算指标（含按 token 数降序的前 N 个文件列表）
 pub fn calculate_metrics(
     files: &[ProcessedFile],
     config: &RepomixConfig,

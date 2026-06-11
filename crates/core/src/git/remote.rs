@@ -15,13 +15,11 @@ pub fn clone_remote_repo(url: &str, target_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// B8 修复：检查是否为Git仓库
-/// 使用 rev-parse --show-toplevel 从子目录中也能正确检测
+/// 检查是否为 Git 仓库（`rev-parse --show-toplevel`，子目录中也能正确检测）
 pub fn is_git_repo(path: &Path) -> bool {
     Command::new("git")
         .args(["rev-parse", "--show-toplevel"])
         .current_dir(path)
-        // B8 修复：抑制 stderr 输出，避免泄露错误信息
         .stderr(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .status()

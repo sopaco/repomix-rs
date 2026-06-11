@@ -106,14 +106,9 @@ static LANGUAGE_REGISTRY: Lazy<HashMap<&'static str, LanguageConfig>> = Lazy::ne
     });
 
     // C#
-    // P0 修复（Bug #2）：`tree-sitter-c-sharp` 0.23 暴露的 language version 是 15，
-    // 而 `queries/c_sharp.scm` 是按 ABI 13-14 编写的。`Query::new` 会直接
-    // 返回 `Incompatible language version 15`，导致 C# 压缩 query 静默失效
-    // （仅运行时 warning）。当前选择**禁用 C# 压缩注册**：.cs 文件会回退到
-    // 纯文本处理路径，不影响其他语言。`.scm` 文件保留，便于将来按 v15 语法
-    // 升级后重新启用。
-    //
-    // 重新启用方式：取消下方注释 + 升级 queries/c_sharp.scm 到 ABI 15 语法。
+    // `tree-sitter-c-sharp` 0.23 的 language ABI version 是 15，
+    // 而 `queries/c_sharp.scm` 是按 ABI 13-14 编写的，暂时禁用 C# 压缩注册。
+    // 重新启用：取消下方注释 + 升级 queries/c_sharp.scm 到 ABI 15 语法。
     /*
     let csharp_lang: Language = tree_sitter_c_sharp::LANGUAGE.into();
     map.insert("c_sharp", LanguageConfig {

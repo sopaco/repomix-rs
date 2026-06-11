@@ -52,7 +52,6 @@ pub fn generate_markdown(
     output.push_str("   - File path as a heading\n");
     output.push_str("   - Full contents of the file in a code block\n\n");
 
-    // B3 修复：header_text/instruction 作为独立的头部输出
     let header_text = format_header(header);
     if !header_text.is_empty() {
         output.push_str("## Custom Instructions\n\n");
@@ -73,7 +72,6 @@ pub fn generate_markdown(
         output.push_str("## Files\n\n");
         for file in files {
             let path_str = display_path(&file.path, pack_root);
-            // P2 修复（Bug #12）：转义 Markdown 标题中的 | 反向引用
             let path_safe = path_str.replace('|', "\\|");
             let line_count = line_counts.get(&path_str).unwrap_or(&0);
             if config.output.parsable_style {

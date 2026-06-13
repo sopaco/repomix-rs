@@ -2,6 +2,8 @@
 name = "repomix-core"
 version = "2.0.0"
 edition = "2024"
+description = "Core engine for repomix: search, collect, process, and pack repository content."
+license = "MIT"
 
 [dependencies]
 repomix-shared = { path = "../shared" }

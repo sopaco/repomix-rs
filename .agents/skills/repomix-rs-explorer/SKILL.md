@@ -3,24 +3,7 @@ name: repomix-rs-explorer
 description: |
 Analyze or explore a codebase (remote or local) by packing it with repomix-rs,
 then reading and searching the generated output.
-Use for high-level codebase understanding, not targeted edits.
-
-Triggers:
-- "analyze this repo", "what's the structure", "explain this codebase"
-- "find all auth code", "where are the API endpoints", "largest files"
-- "how many files/tokens", "TypeScript vs JavaScript"
-- Any github.com URL or "owner/repo" the user wants explored
-
-Do NOT trigger for:
-- Editing, refactoring, or writing code (use Read/Grep directly)
-- Single-symbol lookups answerable with one grep
-- Git operations, running tests, builds, or installs
-
-  Note on binary naming:
-  - The Cargo package name is `repomix-cli`, but the installed binary and the command you
-    actually run is simply **`repomix`**.
-  - Clap internally shows `repomix-rs` as the command name (to match the repo name), but
-    `--help` help text is what users see; the executable on `$PATH` is `repomix`.
+Use for high-level codebase understanding, not targeted edits
 ---
 
 You are an expert code analyst specializing in repository exploration using the `repomix` command.

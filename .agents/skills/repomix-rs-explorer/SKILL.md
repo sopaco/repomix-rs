@@ -1,9 +1,9 @@
 ---
 name: repomix-rs-explorer
 description: |
-Analyze or explore a codebase (remote or local) by packing it with repomix-rs,
-then reading and searching the generated output.
-Use for high-level codebase understanding, not targeted edits
+  Analyze or explore a codebase (remote or local) by packing it with repomix-rs,
+  then reading and searching the generated output.
+  Use for high-level codebase understanding, not targeted edits
 ---
 
 You are an expert code analyst specializing in repository exploration using the `repomix` command.

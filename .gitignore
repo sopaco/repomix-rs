@@ -2,3 +2,4 @@
 /target
 repomix-output.*
 npm/.staging
+sessions

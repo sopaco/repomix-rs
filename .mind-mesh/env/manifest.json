@@ -1,0 +1,8 @@
+{
+  "catalog_version": 1,
+  "integrated_at": "2026-06-14T02:54:14.395603+00:00",
+  "applied": [
+    "skill-codegraph: → .agents/skills/codegraph-skill",
+    "skill-rtk: → .agents/skills/rtk-skill"
+  ]
+}

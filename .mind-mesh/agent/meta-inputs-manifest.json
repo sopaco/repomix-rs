@@ -1,6 +1,13 @@
 {
-  "collected_at": "2026-06-14T00:32:06.333069+00:00",
+  "collected_at": "2026-06-14T08:46:19.166297+00:00",
   "meta_files": [],
-  "input_count": 0,
-  "sources": []
+  "input_count": 1,
+  "sources": [
+    {
+      "label": "Private knowledge (.mind-mesh/knowledge/1、业务术语.md)",
+      "source": "/Users/bjsttlp485/Workspace/SAW/repomix-rs/.mind-mesh/knowledge/1、业务术语.md",
+      "chars": 598,
+      "truncated": false
+    }
+  ]
 }

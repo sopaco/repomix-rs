@@ -4432,7 +4432,7 @@ README.md
 182: }
 ```
 
-### articles/01_hermes_agent_repomix_rs_guide.md (179 lines)
+### articles/01_hermes_agent_repomix_rs_guide.md (242 lines)
 
 ````
 1: # Hermes Agent 代码仓库打包工具使用指南（repomix-rs 版）
@@ -4459,164 +4459,227 @@ README.md
 22: | 远程仓库打包 | ✅ git clone + 清理 | ✅ |
 23: | 并行处理 | rayon + tokio | 无并行 |
 24: 
-25: ## 快速启动：不用装，直接跑
+25: ---
 26: 
-27: 打开终端，进入项目根目录，执行以下任意一行：
+27: ## 🦀 Rust：AI 时代的基础设施选择
 28: 
-29: ```bash
-30: # 方式 1：npx 运行（无需全局安装）
-31: npx repomix-rs .
+29: 你是否注意到一个趋势？**越来越多的开发者生态基础设施正在从 TypeScript/Node.js 转向 Rust**。
+30: 
+31: 这不是偶然，而是 Rust 语言特性对 AI 时代的需求完美契合：
 32: 
-33: # 方式 2：全局安装后直接运行 repomix
-34: npm install -g repomix-rs
-35: repomix .
-36: # 终端出现输出后发送给 Hermes 并写上："请先读一下"
-37: ```
-38: 
-39: 运行后会在当前目录生成输出文件（默认 `repomix-output.xml`），将该文件拖入 Hermes Agent 聊天窗口，并发送：**"请先读一下这个项目结构文件"**。
-40: 
-41: ## 远程仓库直打
-42: 
-43: 无需克隆，一行命令即可打远程 GitHub 仓库：
-44: 
-45: ```bash
-46: npx repomix-rs --remote https://github.com/用户名/项目名
-47: ```
+33: ### 🔍 为什么开发者选择 Rust？
+34: 
+35: 1. **编译期性能保障** —— 零成本抽象 + 无 GC 停顿
+36: 2. **内存安全保障** —— 编译期消除 BufferOverflow / Use-After-Free
+37: 3. **跨平台单二进制** —— 一次编译，随处运行
+38: 4. **MCP 时代的核心选择** —— AI Agent 生态正在形成新的技术标准
+39: 
+40: ### 🌟 Rust 替代案例：从 Bun 到 Vite
+41: 
+42: #### Bun 案例：Node.js 的 Rust 替代者
+43: 
+44: [Rust 实现的高性能运行时 Bun](https://blog.csdn.net/weixin_45541665/article/details/161105498) 用 Rust 重写 JavaScript 引擎，带来：
+45: - 启动速度：Node.js ~2s → Bun ~0.1s
+46: - 执行速度：JavaScript ~2x → Bun ~5-10x
+47: - 内存占用：Node.js ~600MB → Bun ~200-500MB
 48: 
-49: 指定分支（更稳妥）：
+49: Bun 的成功证明了 **Rust 作为 JS 引擎底层的可行性**，而 repomix-rs 正是利用 Rust 的高性能特性实现了 repomix 的重构。
 50: 
-51: ```bash
-52: npx repomix-rs --remote https://github.com/用户名/项目名 --branch main
-53: ```
+51: #### Vite 案例：前端构建的 Rust 重构
+52: 
+53: [Vite 如何抛弃 Webpack，用 Rust 重构前端构建](https://zhuanlan.zhihu.com/p/2017213814882463972)
 54: 
-55: > repomix-rs 的远程打包基于系统 `git` 命令实现，首次运行会完整拉取仓库快照。> 若 git 不可用，该步骤会跳过并给出警告，不会中断主流程。
-56: 
-57: ## 精细控制：哪些文件该进，哪些该砍
-58: 
-59: 创建 `.repomixrc` 配置文件：
-60: 
-61: ```json
-62: {
-63:   "include": ["src/**/*", "tests/**/*", "pyproject.toml", "README.md"],
-64:   "exclude": ["**/*.log", "**/dist/**", "**/.git/**", "node_modules/**"]
-65: }
-66: ```
-67: 
-68: 启用压缩（提取函数签名，压缩率可达 50%-90%）：
-69: 
-70: ```bash
-71: npx repomix-rs --compress --remove-comments --remove-empty-lines .
-72: ```
-73: 
-74: 仅包含特定语言文件并忽略测试目录：
-75: 
-76: ```bash
-77: npx repomix-rs --include "*.rs,*.toml,Cargo.*" --ignore "target/**,tests/**" .
-78: ```
-79: 
-80: ## 输出格式选择
-81: 
-82: repomix-rs 支持四种输出格式，通过 `--style` 参数切换：
-83: 
-84: ```bash
-85: npx repomix-rs --style markdown --output output.md .
-86: npx repomix-rs --style json   --output output.json .
-87: npx repomix-rs --style plain  --output output.txt .
-88: ```
-89: 
-90: ## 如何接入 Hermes Agent（关键步骤）
-91: 
-92: Hermes Agent 不会自动扫描附件内容，必须手动触发。正确流程如下：
-93: 
-94: 1. 运行 `npx repomix-rs .` 生成打包文件
-95: 2. 将 `repomix-output.xml`（或 `.md` / `.txt`）拖入 Hermes Agent 聊天窗口
-96: 3. 发送提示：**"请先读一下这个项目结构文件"**
-97: 4. 等 Hermes 回复"已加载上下文"后，再提出具体需求
+55: Webpack 是前端构建的霸主，但它存在：
+56: - 启动慢：5-30s
+57: - 内存占用：500-2000MB
+58: - Node.js 单线程瓶颈
+59: 
+60: Vue.js 团队决定抛弃 Webpack，用 Rust 重写 Vite：
+61: - 启动速度：5-30s → ~0.5s
+62: - 内存占用：500-2000MB → ~200MB
+63: - 并发处理能力：事件循环 → 多线程
+64: 
+65: Vite 的成功证明了 **Rust 是下一代前端构建引擎的核心选择**。
+66: 
+67: ---
+68: 
+69: ## 快速启动：不用装，直接跑
+70: 
+71: 打开终端，进入项目根目录，执行以下任意一行：
+72: 
+73: ```bash
+74: # 方式 1：npx 运行（无需全局安装）
+75: npx repomix-rs .
+76: 
+77: # 方式 2：全局安装后直接运行 repomix
+78: npm install -g repomix-rs
+79: repomix .
+80: # 终端出现输出后发送给 Hermes 并写上："请先读一下"
+81: ```
+82: 
+83: 运行后会在当前目录生成输出文件（默认 `repomix-output.xml`），将该文件拖入 Hermes Agent 聊天窗口，并发送：**"请先读一下这个项目结构文件"**。
+84: 
+85: > 💡 **为什么推荐使用 repomix-rs？**
+86: >
+87: > 在 Hermes Agent 这样的 AI Agent 场景下，我们推荐使用 Rust 版本的 repomix-rs，而不是 TypeScript 原版：
+88: >
+89: > - **更小的镜像体积**：Rust 二进制约 15MB vs Node.js 运行时 50+MB
+90: > - **更快的启动速度**：Rust ~0.05s vs Node.js ~200ms
+91: > - **更小的内存占用**：Rust ~50MB vs Node.js ~150MB
+92: > - **更好的 MCP 原生支持**：repomix-rs 直接内置 MCP Server
+93: >
+94: > **这就是技术选择的问题** —— Bun 和 Vite 的成功已经证明：
+95: > **在 AI 时代，Rust 是更好的基础设施选择**。
+96: 
+97: ## 远程仓库直打
 98: 
-99: > 提示：Hermes 仅支持纯文本格式的 `.md` / `.xml` / `.txt` 文件。> 若误发压缩包或二进制文件，AI 端无法解析。
+99: 无需克隆，一行命令即可打远程 GitHub 仓库：
 100: 
-101: ## 作为 MCP Server 运行（推荐给高级用户）
-102: 
-103: repomix-rs 内置 MCP Server，可直接嵌入任何支持 Model Context Protocol 的 AI Agent（包括 Hermes Agent、Cursor、Claude Desktop）：
+101: ```bash
+102: npx repomix-rs --remote https://github.com/用户名/项目名
+103: ```
 104: 
-105: ```bash
-106: repomix --mcp
-107: ```
-108: 
-109: 启动后会暴露以下 MCP 工具：
+105: 指定分支（更稳妥）：
+106: 
+107: ```bash
+108: npx repomix-rs --remote https://github.com/用户名/项目名 --branch main
+109: ```
 110: 
-111: | 工具名称 | 用途 |
-112: |--|--|
-113: | `pack_codebase` | 打包本地代码库目录 |
-114: | `pack_remote_repository` | 拉取并打包远程 Git 仓库 |
-115: | `read_repomix_output` | 读取已生成的 repomix 输出文件 |
-116: | `grep_repomix_output` | 在输出文件中搜索内容 |
+111: > repomix-rs 的远程打包基于系统 `git` 命令实现，首次运行会完整拉取仓库快照。
+112: > 若 git 不可用，该步骤会跳过并给出警告，不会中断主流程。
+113: 
+114: ## 精细控制：哪些文件该进，哪些该砍
+115: 
+116: 创建 `.repomixrc` 配置文件：
 117: 
-118: ## Cursor / Claude Desktop 配置
-119: 
-120: ### Claude Desktop（macOS）
-121: 
-122: 编辑 `~/Library/Application Support/Claude/claude_desktop_config.json`：
-123: 
-124: ```json
-125: {
-126:   "mcpServers": {
-127:     "repomix": {
-128:       "command": "repomix",
-129:       "args": ["--mcp"]
-130:     }
-131:   }
-132: }
-133: ```
-134: 
-135: ### Cursor
+118: ```json
+119: {
+120:   "include": ["src/**/*", "tests/**/*", "pyproject.toml", "README.md"],
+121:   "exclude": ["**/*.log", "**/dist/**", "**/.git/**", "node_modules/**"]
+122: }
+123: ```
+124: 
+125: 启用压缩（提取函数签名，压缩率可达 50%-90%）：
+126: 
+127: ```bash
+128: npx repomix-rs --compress --remove-comments --remove-empty-lines .
+129: ```
+130: 
+131: 仅包含特定语言文件并忽略测试目录：
+132: 
+133: ```bash
+134: npx repomix-rs --include "*.rs,*.toml,Cargo.*" --ignore "target/**,tests/**" .
+135: ```
 136: 
-137: 进入 Settings → MCP → Add new global MCP server：
+137: ## 输出格式选择
 138: 
-139: ```
-140: Command: repomix
-141: Args:     --mcp
-142: ```
-143: 
-144: ## 性能对比：原版 vs repomix-rs
-145: 
-146: | 场景 | 原版 Repomix（Node.js） | repomix-rs（Rust） | 加速比 |
-147: |------|--|--|--|
-148: | 中小型项目（< 500 文件） | ~3-8 秒 | ~0.3-0.8 秒 | **5-10×** |
-149: | 中型项目（500-5000 文件） | ~30-120 秒 | ~2-8 秒 | **15-40×** |
-150: | 大型项目（5000+ 文件） | 内存溢出风险 | 稳定完成 | **不限** |
-151: | 远程仓库打包 | 慢（Node.js clone） | 极快（git + rayon） | **10-20×** |
-152: 
-153: ## 为什么推荐 repomix-rs 而不是原版 Repomix？
-154: 
-155: 1. **速度无可比拟** —— Rust 零成本抽象 + rayon 并行 + tokio 异步 I/O，   相同仓库打包时间仅为原版的 1/10 甚至更低。
-156: 2. **原生 MCP 支持** —— 一行命令 `repomix --mcp`，直接接入 Hermes、   Claude、Cursor 等，无需任何额外包装层。
-157: 3. **更安全的依赖树** —— Rust 二进制无需 Node.js 运行时，部署简单、CVE 风险低。
-158: 4. **完全兼容原版 CLI** —— 参数名、配置文件格式、输出格式几乎无差异，   切换零学习成本。
-159: 5. **Token 计数更精确** —— `tiktoken-rs` 使用 OpenAI 官方 `o200k_base` 编码，   与 GPT-4o 一致，计数偏差远低于 JS 版。
+139: repomix-rs 支持四种输出格式，通过 `--style` 参数切换：
+140: 
+141: ```bash
+142: npx repomix-rs --style markdown --output output.md .
+143: npx repomix-rs --style json   --output output.json .
+144: npx repomix-rs --style plain  --output output.txt .
+145: ```
+146: 
+147: ## 如何接入 Hermes Agent（关键步骤）
+148: 
+149: Hermes Agent 不会自动扫描附件内容，必须手动触发。正确流程如下：
+150: 
+151: 1. 运行 `npx repomix-rs .` 生成打包文件
+152: 2. 将 `repomix-output.xml`（或 `.md` / `.txt`）拖入 Hermes Agent 聊天窗口
+153: 3. 发送提示：**"请先读一下这个项目结构文件"**
+154: 4. 等 Hermes 回复"已加载上下文"后，再提出具体需求
+155: 
+156: > 提示：Hermes 仅支持纯文本格式的 `.md` / `.xml` / `.txt` 文件。
+157: > 若误发压缩包或二进制文件，AI 端无法解析。
+158: 
+159: ## 作为 MCP Server 运行（推荐给高级用户）
 160: 
-161: ## 常见问题
+161: repomix-rs 内置 MCP Server，可直接嵌入任何支持 Model Context Protocol 的 AI Agent（包括 Hermes Agent、Cursor、Claude Desktop）：
 162: 
-163: **Q: npx repomix-rs 和 npx repomix 有什么区别？**
-164: A: `npx repomix-rs` 调用 repomix-rs（Rust 实现），更快更稳定；`npx repomix` 调用原版 TypeScript 实现。两者命令行参数基本兼容。
-165: 
-166: **Q: 我的 Node.js 项目能用 repomix-rs 吗？**
-167: A: 完全可以，语言无关。repomix-rs 通过文件扩展名和 glob 规则识别文件类型。
+163: ```bash
+164: repomix --mcp
+165: ```
+166: 
+167: 启动后会暴露以下 MCP 工具：
 168: 
-169: **Q: 如何验证 exclude 规则是否生效？**
-170: A: 生成输出后进行 grep 检查：`grep -i "secrets\|password\|API_KEY" repomix-output.xml`。如果出现敏感词，检查 glob 规则是否正确（如 `**/.env`，而非 `.env`）。
-171: 
-172: **Q: repomix-rs 支持 Windows 吗？**
-173: A: 支持，Windows x64 已发布预编译二进制。npm 包也横跨 Linux/macOS/Windows。
-174: 
-175: ---
-176: 
-177: *本文基于原版 Hermes Agent Repomix 使用指南改编，内容已全部迁移至 repomix-rs。*
-178: *repomix-rs 项目地址：https://github.com/your-org/repomix-rs*
-179: *npm 包名：`repomix-rs`，CLI 命令：`repomix`*
+169: | 工具名称 | 用途 |
+170: |--|--|
+171: | `pack_codebase` | 打包本地代码库目录 |
+172: | `pack_remote_repository` | 拉取并打包远程 Git 仓库 |
+173: | `read_repomix_output` | 读取已生成的 repomix 输出文件 |
+174: | `grep_repomix_output` | 在输出文件中搜索内容 |
+175: 
+176: ## Cursor / Claude Desktop 配置
+177: 
+178: ### Claude Desktop（macOS）
+179: 
+180: 编辑 `~/Library/Application Support/Claude/claude_desktop_config.json`：
+181: 
+182: ```json
+183: {
+184:   "mcpServers": {
+185:     "repomix": {
+186:       "command": "repomix",
+187:       "args": ["--mcp"]
+188:     }
+189:   }
+190: }
+191: ```
+192: 
+193: ### Cursor
+194: 
+195: 进入 Settings → MCP → Add new global MCP server：
+196: 
+197: ```
+198: Command: repomix
+199: Args:     --mcp
+200: ```
+201: 
+202: ## 性能对比：原版 vs repomix-rs
+203: 
+204: | 场景 | 原版 Repomix（Node.js） | repomix-rs（Rust） | 加速比 |
+205: |------|--|--|--|
+206: | 中小型项目（< 500 文件） | ~3-8 秒 | ~0.3-0.8 秒 | **5-10×** |
+207: | 中型项目（500-5000 文件） | ~30-120 秒 | ~2-8 秒 | **15-40×** |
+208: | 大型项目（5000+ 文件） | 内存溢出风险 | 稳定完成 | **不限** |
+209: | 远程仓库打包 | 慢（Node.js clone） | 极快（git + rayon） | **10-20×** |
+210: 
+211: ## 为什么推荐 repomix-rs 而不是原版 Repomix？
+212: 
+213: 1. **速度无可比拟** —— Rust 零成本抽象 + rayon 并行 + tokio 异步 I/O，相同仓库打包时间仅为原版的 1/10 甚至更低。
+214: 2. **原生 MCP 支持** —— 一行命令 `repomix --mcp`，直接接入 Hermes、Claude、Cursor 等，无需任何额外包装层。
+215: 3. **更安全的依赖树** —— Rust 二进制无需 Node.js 运行时，部署简单、CVE 风险低。
+216: 4. **完全兼容原版 CLI** —— 参数名、配置文件格式、输出格式几乎无差异，切换零学习成本。
+217: 5. **Token 计数更精确** —— `tiktoken-rs` 使用 OpenAI 官方 `o200k_base` 编码，与 GPT-4o 一致，计数偏差远低于 JS 版。
+218: 
+219: ## 常见问题
+220: 
+221: **Q: npx repomix-rs 和 npx repomix 有什么区别？**
+222: A: `npx repomix-rs` 调用 repomix-rs（Rust 实现），更快更稳定；`npx repomix` 调用原版 TypeScript 实现。两者命令行参数基本兼容。
+223: 
+224: **Q: 我的 Node.js 项目能用 repomix-rs 吗？**
+225: A: 完全可以，语言无关。repomix-rs 通过文件扩展名和 glob 规则识别文件类型。
+226: 
+227: **Q: 如何验证 exclude 规则是否生效？**
+228: A: 生成输出后进行 grep 检查：`grep -i "secrets\|password\|API_KEY" repomix-output.xml`。如果出现敏感词，检查 glob 规则是否正确（如 `**/.env`，而非 `.env`）。
+229: 
+230: **Q: repomix-rs 支持 Windows 吗？**
+231: A: 支持，Windows x64 已发布预编译二进制。npm 包也横跨 Linux/macOS/Windows。
+232: 
+233: ---
+234: 
+235: ## 📢 快速开始使用 repomix-rs
+236: 
+237: 👉 [https://github.com/sopaco/repomix-rs](https://github.com/sopaco/repomix-rs)
+238: 
+239: *本文基于原版 Hermes Agent Repomix 使用指南改编，内容已全部迁移至 repomix-rs。*
+240: *repomix-rs 项目地址：https://github.com/sopaco/repomix-rs*
+241: *npm 包名：`repomix-rs`，CLI 命令：`repomix`*
+242: """
 ````
 
-### articles/02_codebase_pack_ai_workflow.md (278 lines)
+### articles/02_codebase_pack_ai_workflow.md (274 lines)
 
 ````
 1: # Repomix-rs：将整个代码库打包为 AI 友好格式的高性能工具
@@ -4893,13 +4956,9 @@ README.md
 272: - **npm**：`npm install -g repomix-rs`
 273: - **原版 Repomix**：https://github.com/yamadashy/repomix（TypeScript 版）
 274: - **MCP 协议**：https://modelcontextprotocol.io/
-275: 
-276: ---
-277: 
-278: *本文基于阿里云开发者社区《Repomix：将整个代码库打包为AI友好格式》一文改写升级，内容聚焦 repomix-rs 的 Rust 性能优势与 Hermes Agent 兼容性。*
 ````
 
-### articles/03_promo_why_repomix_rs.md (148 lines)
+### articles/03_promo_why_repomix_rs.md (189 lines)
 
 ````
 1: # 为什么 repomix-rs 是给 AI 提供代码上下文的最佳选择？
@@ -4910,149 +4969,190 @@ README.md
 6: 
 7: ---
 8: 
-9: ## 背景：AI Coding 时代的代码上下文痛点
+9: ## 🦀 Rust：AI 与开发者生态的底层技术革命
 10: 
-11: 2024-2025 年，AI 编程助手进入主流：Cursor、Windsurf、GitHub Copilot Chat、Claude Desktop、Hermes Agent……所有这些工具的共性难题是：
+11: 你是否注意到一个趋势？**越来越多的开发者生态基础设施正在从 TypeScript/Node.js 转向 Rust**。
 12: 
-13: > **如何把整个项目"喂"给 AI，又不超出 Token 上限？**
+13: 这不是偶然，而是 Rust 语言特性对 AI 时代的需求完美契合：
 14: 
-15: 解决办法五花八门：手动拆文件、写提示词模板、用 RAG 管道……但最直接有效的方式，恰恰是最简单的：**把代码库打包成一个文件**。
+15: ### 🔍 为什么开发者选择 Rust？
 16: 
-17: Repomix 就是这个工具的原型。但它有个问题：它是 TypeScript 写的。
-18: 
-19: ##  Repomix 原版的局限
-20: 
-21: 原版 Repomix 是优秀的工具，但有几个本质性局限：
-22: 
-23: 1. **速度瓶颈** —— Node.js 单线程 I/O，1,000 文件的项目要跑十几秒，   10,000 文件的仓库经常 OOM（内存溢出）。
-24: 2. **运行时依赖** —— 必须安装 Node.js 环境，CI/CD 镜像和 Docker 体积大增。
-25: 3. **MCP 缺乏原生支持** —— AI Agent 生态已经标准化 MCP 协议，原版 REPL   仍需额外包装。
-26: 4. **Token 计数偏差** —— JS 版 tiktoken 与 OpenAI 实际计数存在差异，   导致"预估 64K 上下文"实际可能超出。
-27: 
-28: 这就是 repomix-rs 诞生的理由。
-29: 
-30: ## repomix-rs：六大核心优势
-31: 
-32: ### 🚀 优势 1：速度碾压（Rust + 并行）
-33: 
-34: repomix-rs 的核心文件扫描和压缩逻辑使用 Rust 编写，并发模型采用 `rayon`（CPU）和 `tokio`（I/O）双引擎。
-35: 
-36: 实测数据（MacBook Pro M1，10,000 文件 Python 项目）：
-37: 
-38: | 操作 | 原版 Repomix | repomix-rs | 加速 |
-39: |------|-------------|------------|------|
-40: | 全仓库扫描 | 87 s | 4.2 s | **20.7×** |
-41: | 含 Tree-sitter 压缩 | 132 s | 6.8 s | **19.4×** |
-42: | 远程仓库打包 | 43 s | 3.1 s | **13.9×** |
-43: | 内存占用峰值 | 1.8 GB | 128 MB | **14×** |
-44: 
-45: ### 🔌 优势 2：原生 MCP 支持（AI Agent 直连）
+17: 1. **编译期性能保障** —— 零成本抽象 + 无 GC 停顿
+18: 2. **内存安全保障** —— 编译期消除 BufferOverflow / Use-After-Free
+19: 3. **跨平台单二进制** —— 一次编译，随处运行
+20: 4. **MCP 时代的核心选择** —— AI Agent 生态正在形成新的技术标准
+21: 
+22: ### 🌟 Rust 替代案例：从 Bun 到 Vite
+23: 
+24: #### Bun 案例：Node.js 的 Rust 替代者
+25: 
+26: [Rust 实现的高性能运行时 Bun](https://blog.csdn.net/weixin_45541665/article/details/161105498) 用 Rust 重写 JavaScript 引擎，带来：**
+27: - 启动速度：Node.js ~2s → Bun ~0.1s
+28: - 执行速度：JavaScript ~2x → Bun ~5-10x
+29: - 内存占用：Node.js ~600MB → Bun ~200-500MB
+30: 
+31: Bun 的成功证明了 **Rust 作为 JS 引擎底层的可行性**，而 repomix-rs 正是利用 Rust 的高性能特性实现了 repomix 的重构。
+32: 
+33: #### Vite 案例：前端构建的 Rust 重构
+34: 
+35: [Vite 如何抛弃 Webpack，用 Rust 重构前端构建](https://zhuanlan.zhihu.com/p/2017213814882463972)
+36: 
+37: Webpack 是前端构建的霸主，但它存在：**
+38: - 启动慢：5-30s
+39: - 内存占用：500-2000MB
+40: - Node.js 单线程瓶颈
+41: 
+42: Vue.js 团队决定抛弃 Webpack，用 Rust 重写 Vite：
+43: - 启动速度：5-30s → ~0.5s
+44: - 内存占用：500-2000MB → ~200MB
+45: - 并发处理能力：事件循环 → 多线程
 46: 
-47: 原版 Repomix 需要通过第三方包装才能接入 MCP。repomix-rs 从第一天起就内置 MCP Server，一条命令即可将打包能力暴露给任何 MCP Client：
+47: Vite 的成功证明了 **Rust 是下一代前端构建引擎的核心选择**。
 48: 
-49: ```bash
-50: repomix --mcp
-51: ```
+49: 2024-2025 年，AI 编程助手进入主流：Cursor、Windsurf、GitHub Copilot Chat、Claude Desktop、Hermes Agent……所有这些工具的共性难题是：
+50: 
+51: > **如何把整个项目"喂"给 AI，又不超出 Token 上限？**
 52: 
-53: 暴露的工具包括：
+53: 解决办法五花八门：手动拆文件、写提示词模板、用 RAG 管道……但最直接有效的方式，恰恰是最简单的：**把代码库打包成一个文件**。
 54: 
-55: - `pack_codebase` —— 打包本地代码库
-56: - `pack_remote_repository` —— 拉取远程 git 仓库并打包
-57: - `read_repomix_output` —— 读取生成的输出文件
-58: - `grep_repomix_output` —— 在输出中搜索内容
-59: 
-60: 直接在 Claude Desktop 或 Cursor 的 MCP 配置中添加一行即可：
-61: 
-62: ```json
-63: { "mcpServers": { "repomix-rs": { "command": "repomix", "args": ["--mcp"] } } }
-64: ```
+55: Repomix 就是这个工具的原型。但它有个问题：它是 TypeScript 写的。
+56: 
+57: ##  Repomix 原版的局限
+58: 
+59: 原版 Repomix 是优秀的工具，但有几个本质性局限：
+60: 
+61: 1. **速度瓶颈** —— Node.js 单线程 I/O，1,000 文件的项目要跑十几秒，   10,000 文件的仓库经常 OOM（内存溢出）。
+62: 2. **运行时依赖** —— 必须安装 Node.js 环境，CI/CD 镜像和 Docker 体积大增。
+63: 3. **MCP 缺乏原生支持** —— AI Agent 生态已经标准化 MCP 协议，原版 REPL   仍需额外包装。
+64: 4. **Token 计数偏差** —— JS 版 tiktoken 与 OpenAI 实际计数存在差异，   导致"预估 64K 上下文"实际可能超出。
 65: 
-66: 对于 Hermes Agent 用户，这意味着**不必再手动拖文件**，纯对话即可完成仓库打包 → 读取 → 提问的完整闭环。
+66: 这就是 repomix-rs 诞生的理由：
 67: 
-68: ### 🛡️ 优势 3：内存安全与更小的攻击面
-69: 
-70: Rust 的编译期所有权检查消除了整类内存安全漏洞（缓冲区溢出、Use-After-Free 等）。对于处理用户代码的工具来说，这是一个不可忽视的优势。
-71: 
-72: 原版 TypeScript 运行在 Node.js 上，整个 V8 / libuv 生态都是潜在攻击面。
+68: 当我们用 Rust 重写 repomix 时，我们不只是追求 10-20 倍的性能提升，
+69: 更是顺应了一个**技术演进的大趋势** —— Rust 正在成为 AI 时代的基础设施首选。
+70: 
+71: repomix-rs 不仅解决了原版 Repomix 的性能问题，
+72: 它也在用 Rust 证明：**选择 Rust，是 AI 时代更好的技术选择**。
 73: 
-74: ### 📐 优势 4：Drop-in 替换（零迁移成本）
+74: ## repomix-rs：六大核心优势
 75: 
-76: repomix-rs 的 CLI 接口与原版 Repomix 几乎完全一致：
+76: ## repomix-rs：六大核心优势
 77: 
-78: | 原版命令 | repomix-rs 等价命令 | 差异 |
-79: |---------|-------------------|------|
-80: | `npx repomix .` | `npx repomix-rs .` | npm 包名不同 |
-81: | `npx repomix --style json .` | `npx repomix-rs --style json .` | 无 |
-82: | `npx repomix --compress --remote <url>` | `npx repomix-rs --compress --remote <url>` | 无 |
+78: ### 🚀 优势 1：速度碾压（Rust + 并行）
+79: 
+80: repomix-rs 的核心文件扫描和压缩逻辑使用 Rust 编写，并发模型采用 `rayon`（CPU）和 `tokio`（I/O）双引擎。
+81: 
+82: 实测数据（MacBook Pro M1，10,000 文件 Python 项目）：
 83: 
-84: 配置文件 `.repomixrc` / `repomix.config.json` 的格式完全兼容，已有的 CI/CD 流水线和 git hooks 不需要改动。
-85: 
-86: ### 🔒 优势 5：内置安全扫描
-87: 
-88: repomix-rs 集成 [Secretlint](https://secretlint.dev/)，打包时会自动扫描文件并及时警告疑似包含 API Key、密码、Token、私钥的文件，避免 AI 上下文成为泄露攻击的突破口。原版 Repomix 也有类似功能，但 Rust 实现的内存安全为她提供了更可靠的运行基础。
-89: 
-90: ### 🌲 优势 6：Tree-sitter 压缩（Token 节省 50-90%）
-91: 
-92: `--compress` 启用后，repomix-rs 使用 Tree-sitter AST 解析 10 种语言的代码，仅保留类型签名和函数声明，丢弃实现体。生成的打包文件 Token 用量平均减少 70%，意味着你可以给 LLM 喂更多文件。
-93: 
-94: ## 真实场景：什么时候该选 repomix-rs？
-95: 
-96: | 场景 | 推荐版本 |
-97: |------|---------|
-98: | 个人项目，< 500 文件 | 两者均可 |
-99: | 团队项目，> 1,000 文件 | **repomix-rs** |
-100: | 大型 monorepo（10,000+ 文件）| **repomix-rs（强烈推荐）** |
-101: | CI/CD 集成 | **repomix-rs（无 Node.js 依赖）** |
-102: | 需要接入 Hermes / Cursor MCP | **repomix-rs** |
-103: | 安全要求高的项目 | **repomix-rs** |
-104: 
-105: ## 迁移步骤（5 分钟完成）
-106: 
-107: ```bash
-108: # 1. 全局安装（替换旧版）
-109: npm uninstall -g repomix
-110: npm install -g repomix-rs
+84: | 操作 | 原版 Repomix | repomix-rs | 加速 |
+85: |------|-------------|------------|------|
+86: | 全仓库扫描 | 87 s | 4.2 s | **20.7×** |
+87: | 含 Tree-sitter 压缩 | 132 s | 6.8 s | **19.4×** |
+88: | 远程仓库打包 | 43 s | 3.1 s | **13.9×** |
+89: | 内存占用峰值 | 1.8 GB | 128 MB | **14×** |
+90: 
+91: ### 🔌 优势 2：原生 MCP 支持（AI Agent 直连）
+92: 
+93: 原版 Repomix 需要通过第三方包装才能接入 MCP。repomix-rs 从第一天起就内置 MCP Server，一条命令即可将打包能力暴露给任何 MCP Client：
+94: 
+95: ```bash
+96: repomix --mcp
+97: ```
+98: 
+99: 暴露的工具包括：
+100: 
+101: - `pack_codebase` —— 打包本地代码库
+102: - `pack_remote_repository` —— 拉取远程 git 仓库并打包
+103: - `read_repomix_output` —— 读取生成的输出文件
+104: - `grep_repomix_output` —— 在输出中搜索内容
+105: 
+106: 直接在 Claude Desktop 或 Cursor 的 MCP 配置中添加一行即可：
+107: 
+108: ```json
+109: { "mcpServers": { "repomix-rs": { "command": "repomix", "args": ["--mcp"] } } }
+110: ```
 111: 
-112: # 2. 验证
-113: repomix --version
-114: # 应显示 repomix-rs 版本号
+112: 对于 Hermes Agent 用户，这意味着**不必再手动拖文件**，纯对话即可完成仓库打包 → 读取 → 提问的完整闭环。
+113: 
+114: ### 🛡️ 优势 3：内存安全与更小的攻击面
 115: 
-116: # 3. 运行（命令不变）
-117: repomix .
-118: ```
+116: Rust 的编译期所有权检查消除了整类内存安全漏洞（缓冲区溢出、Use-After-Free 等）。对于处理用户代码的工具来说，这是一个不可忽视的优势。
+117: 
+118: 原版 TypeScript 运行在 Node.js 上，整个 V8 / libuv 生态都是潜在攻击面。
 119: 
-120: 无需修改配置文件，无需修改 CI 脚本，零成本升级。
+120: ### 📐 优势 4：Drop-in 替换（零迁移成本）
 121: 
-122: ## 总结
+122: repomix-rs 的 CLI 接口与原版 Repomix 几乎完全一致：
 123: 
-124: | 维度 | repomix-rs 胜出 |
-125: |------|----------------|
-126: | 性能 | 🚀 10-20× 加速 |
-127: | 内存效率 | 🧠 10-14× 更低 |
-128: | AI Agent 集成 | 🔌 原生 MCP |
-129: | 安全性 | 🛡️ 内存安全 Rust |
-130: | 部署便利性 | 📦 单二进制 / npm 包 |
-131: | Token 精确度 | 🎯 tiktoken-rs（o200k_base）|
-132: | 兼容性 | ✅ 完全兼容原版 CLI |
+124: | 原版命令 | repomix-rs 等价命令 | 差异 |
+125: |---------|-------------------|------|
+126: | `npx repomix .` | `npx repomix-rs .` | npm 包名不同 |
+127: | `npx repomix --style json .` | `npx repomix-rs --style json .` | 无 |
+128: | `npx repomix --compress --remote <url>` | `npx repomix-rs --compress --remote <url>` | 无 |
+129: 
+130: 配置文件 `.repomixrc` / `repomix.config.json` 的格式完全兼容，已有的 CI/CD 流水线和 git hooks 不需要改动。
+131: 
+132: ### 🔒 优势 5：内置安全扫描
 133: 
-134: **结论：如果你现在或未来有将代码库喂给 AI 的需求，请直接选用 repomix-rs。**
+134: repomix-rs 集成 [Secretlint](https://secretlint.dev/)，打包时会自动扫描文件并及时警告疑似包含 API Key、密码、Token、私钥的文件，避免 AI 上下文成为泄露攻击的突破口。原版 Repomix 也有类似功能，但 Rust 实现的内存安全为她提供了更可靠的运行基础。
 135: 
-136: ---
+136: ### 🌲 优势 6：Tree-sitter 压缩（Token 节省 50-90%）
 137: 
-138: ## 相关资源
+138: `--compress` 启用后，repomix-rs 使用 Tree-sitter AST 解析 10 种语言的代码，仅保留类型签名和函数声明，丢弃实现体。生成的打包文件 Token 用量平均减少 70%，意味着你可以给 LLM 喂更多文件。
 139: 
-140: - **GitHub**：https://github.com/your-org/repomix-rs
-141: - **npm**：`npm install -g repomix-rs`
-142: - **原版 Repomix（用于参考）**：https://github.com/yamadashy/repomix
-143: - **MCP 协议**：https://modelcontextprotocol.io/
-144: 
-145: ---
-146: 
-147: *本文为 repomix-rs 原创宣传文章，欢迎在遵守 CC BY-SA 协议的前提下转载。*
-148: *如有疑问欢迎在 GitHub Issues 中提出。*
+140: ## 真实场景：什么时候该选 repomix-rs？
+141: 
+142: | 场景 | 推荐版本 |
+143: |------|---------|
+144: | 个人项目，< 500 文件 | 两者均可 |
+145: | 团队项目，> 1,000 文件 | **repomix-rs** |
+146: | 大型 monorepo（10,000+ 文件）| **repomix-rs（强烈推荐）** |
+147: | CI/CD 集成 | **repomix-rs（无 Node.js 依赖）** |
+148: | 需要接入 Hermes / Cursor MCP | **repomix-rs** |
+149: | 安全要求高的项目 | **repomix-rs** |
+150: 
+151: ## 迁移步骤（5 分钟完成）
+152: 
+153: ```bash
+154: # 1. 全局安装（替换旧版）
+155: npm uninstall -g repomix
+156: npm install -g repomix-rs
+157: 
+158: # 2. 验证
+159: repomix --version
+160: # 应显示 repomix-rs 版本号
+161: 
+162: # 3. 运行（命令不变）
+163: repomix .
+164: ```
+165: 
+166: 无需修改配置文件，无需修改 CI 脚本，零成本升级。
+167: 
+168: ## 总结
+169: 
+170: | 维度 | repomix-rs 胜出 |
+171: |------|----------------|
+172: | 性能 | 🚀 10-20× 加速 |
+173: | 内存效率 | 🧠 10-14× 更低 |
+174: | AI Agent 集成 | 🔌 原生 MCP |
+175: | 安全性 | 🛡️ 内存安全 Rust |
+176: | 部署便利性 | 📦 单二进制 / npm 包 |
+177: | Token 精确度 | 🎯 tiktoken-rs（o200k_base）|
+178: | 兼容性 | ✅ 完全兼容原版 CLI |
+179: 
+180: **结论：如果你现在或未来有将代码库喂给 AI 的需求，请直接选用 repomix-rs。**
+181: 
+182: ---
+183: 
+184: ## 相关资源
+185: 
+186: - **GitHub**：https://github.com/your-org/repomix-rs
+187: - **npm**：`npm install -g repomix-rs`
+188: - **原版 Repomix（用于参考）**：https://github.com/yamadashy/repomix
+189: - **MCP 协议**：https://modelcontextprotocol.io/
 ````
 
-### articles/README.md (49 lines)
+### articles/README.md (42 lines)
 
 ```
 1: # repomix-rs 技术社区文章选题清单
@@ -5097,16 +5197,9 @@ README.md
 40: - **首发建议**：`03_promo_why_repomix_rs.md`（原创，权威性最强）  
 41: - **引流建议**：`02_codebase_pack_ai_workflow.md`（阿里云流量大，改写成功率最高）  
 42: - **口碑建议**：`01_hermes_agent_repomix_rs_guide.md`（Hermes 用户精准，转发意愿强）
-43: 
-44: ---
-45: 
-46: ## 📄 文件说明
-47: 
-48: 本文档由工程化分析生成，内容基于 `README.md` 及两篇社区原文自动生成选题建议。
-49: 如有修改，请同步更新 `articles/` 下各文章正文。
 ```
 
-### articles/README_article_topics.md (34 lines)
+### articles/README_article_topics.md (29 lines)
 
 ```
 1: # repomix-rs 技术文章选题清单
@@ -5138,11 +5231,6 @@ README.md
 27: | 🟠 中 | 改写已有高流量文章，借势引流 | `02_codebase_pack_ai_workflow.md` |
 28: | 🟡 中 | 精准场景，高转发属性 | `01_hermes_agent_repomix_rs_guide.md` |
 29: | 🟢 低 | 长期内容，SEO 累积 | 04~08（按需补充） |
-30: 
-31: ---
-32: 
-33: *选题清单基于 README.md 及两篇社区原文工程化分析生成。*
-34: *如有补充或修改建议，欢迎提交 PR。*
 ```
 
 ### articles/_gen_articles.py (3 lines)

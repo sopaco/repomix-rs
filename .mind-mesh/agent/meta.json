@@ -1,0 +1,94 @@
+{
+  "project": "repomix-rs",
+  "repo_path": "/Users/bjsttlp485/Workspace/SAW/repomix-rs",
+  "generator": "repomix-core",
+  "pack_strategy": "architecture-context",
+  "output_file": "repomix.md",
+  "total_files": 88,
+  "total_tokens": 43548,
+  "total_characters": 143071,
+  "top_files_by_tokens": [
+    {
+      "path": "README.md",
+      "tokens": 5669
+    },
+    {
+      "path": "articles/02_codebase_pack_ai_workflow.md",
+      "tokens": 3361
+    },
+    {
+      "path": "crates/mcp/src/server.rs",
+      "tokens": 2836
+    },
+    {
+      "path": "articles/01_hermes_agent_repomix_rs_guide.md",
+      "tokens": 2510
+    },
+    {
+      "path": "crates/config/src/load.rs",
+      "tokens": 2502
+    },
+    {
+      "path": "articles/03_promo_why_repomix_rs.md",
+      "tokens": 2273
+    },
+    {
+      "path": "scripts/publish-crates.sh",
+      "tokens": 2119
+    },
+    {
+      "path": "scripts/publish-npm.mjs",
+      "tokens": 1847
+    },
+    {
+      "path": "crates/config/src/schema.rs",
+      "tokens": 1631
+    },
+    {
+      "path": "crates/core/src/security/secretlint.rs",
+      "tokens": 1354
+    },
+    {
+      "path": "articles/README.md",
+      "tokens": 1145
+    },
+    {
+      "path": "crates/core/src/packager.rs",
+      "tokens": 853
+    },
+    {
+      "path": "articles/README_article_topics.md",
+      "tokens": 805
+    },
+    {
+      "path": "scripts/check-npm-version.mjs",
+      "tokens": 756
+    },
+    {
+      "path": "crates/cli/src/spinner.rs",
+      "tokens": 753
+    },
+    {
+      "path": "crates/cli/src/main.rs",
+      "tokens": 662
+    },
+    {
+      "path": "crates/core/src/file/tree_generate.rs",
+      "tokens": 620
+    },
+    {
+      "path": "crates/core/src/metrics/token_count.rs",
+      "tokens": 615
+    },
+    {
+      "path": "crates/mcp/src/params.rs",
+      "tokens": 601
+    },
+    {
+      "path": "crates/mcp/src/helpers.rs",
+      "tokens": 557
+    }
+  ],
+  "directory_structure": "articles/\n  01_hermes_agent_repomix_rs_guide.md\n  02_codebase_pack_ai_workflow.md\n  03_promo_why_repomix_rs.md\n  README.md\n  README_article_topics.md\n  _gen_articles.py\ncrates/\n  cli/\n    src/\n      prompts/\n        mod.rs\n      main.rs\n      report.rs\n      run.rs\n      spinner.rs\n    Cargo.toml\n  config/\n    src/\n      default_ignore.rs\n      global_dir.rs\n      lib.rs\n      load.rs\n      schema.rs\n      tests.rs\n    Cargo.toml\n  core/\n    src/\n      file/\n        collect.rs\n        manipulate.rs\n        mod.rs\n        process.rs\n        process_content.rs\n        search.rs\n        tree_generate.rs\n        truncate_base64.rs\n        types.rs\n      git/\n        diff.rs\n        log.rs\n        mod.rs\n        remote.rs\n        sort.rs\n      metrics/\n        calculate.rs\n        mod.rs\n        token_count.rs\n      output/\n        styles/\n          json.rs\n          markdown.rs\n          mod.rs\n          plain.rs\n          xml.rs\n        decorate.rs\n        generate.rs\n        mod.rs\n        split.rs\n      security/\n        mod.rs\n        secretlint.rs\n        validate.rs\n      tree_sitter/\n        queries/\n          c.scm\n          c_sharp.scm\n          cpp.scm\n          go.scm\n          java.scm\n          javascript.scm\n          php.scm\n          python.scm\n          ruby.scm\n          rust.scm\n          typescript.scm\n        compress.rs\n        languages.rs\n        mod.rs\n      lib.rs\n      packager.rs\n      path_util.rs\n    Cargo.toml\n  mcp/\n    src/\n      tools/\n        mod.rs\n      helpers.rs\n      lib.rs\n      output_path.rs\n      params.rs\n      server.rs\n    Cargo.toml\n  shared/\n    src/\n      lib.rs\n      logger.rs\n      pattern_utils.rs\n      types.rs\n    Cargo.toml\n    LICENSE-MIT\nnpm/\n  repomix-rs/\n    bin/\n      repomix.js\n    package.json\n  templates/\n    platform-package.json.tmpl\nscripts/\n  check-npm-version.mjs\n  publish-crates.sh\n  publish-npm.mjs\nCargo.toml\nLICENSE\nREADME.md",
+  "synced_at": "2026-06-14T01:39:19.925380+00:00"
+}

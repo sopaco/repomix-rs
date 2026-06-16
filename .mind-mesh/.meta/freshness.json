@@ -4,7 +4,7 @@
   "repo_path": "/Users/bjsttlp485/Workspace/SAW/repomix-rs",
   "baseline": {
     "git_head": "f65fdc859717566a081e5d25416849f644f940f0",
-    "git_head_at": "2026-06-15T08:26:51.209332+00:00",
+    "git_head_at": "2026-06-16T02:53:03.919084+00:00",
     "dirty": true
   },
   "assets": {
@@ -12,18 +12,18 @@
       "path": "agent/repomix.md",
       "synced_at": "2026-06-14T02:47:11.618588+00:00",
       "stale": false,
-      "freshness_score": 93
+      "freshness_score": 91
     },
     "agent_context": {
       "path": "agent/context.md",
       "synced_at": "2026-06-14T10:36:39.863213+00:00",
       "stale": false,
-      "freshness_score": 85
+      "freshness_score": 83
     },
     "human_docs": {
       "path": "human/",
       "stale": false,
-      "freshness_score": 93
+      "freshness_score": 91
     }
   },
   "drift": {
@@ -32,25 +32,25 @@
     "sample_changed_files": []
   },
   "summary": {
-    "overall_score": 85,
+    "overall_score": 83,
     "overall_stale": false,
     "commits_since_baseline": 0,
     "changed_files_count": 0,
     "current_git_head": "f65fdc8",
     "working_tree_dirty": true,
     "is_git_repo": true,
-    "last_computed_at": "2026-06-15T08:26:51.209332+00:00",
-    "agent_pack_score": 93,
-    "agent_context_score": 85,
-    "human_docs_score": 93,
+    "last_computed_at": "2026-06-16T02:53:03.919084+00:00",
+    "agent_pack_score": 91,
+    "agent_context_score": 83,
+    "human_docs_score": 91,
     "macro_preload_allowed": true,
     "drift_factors": [
       {
         "id": "pack_age",
         "severity": "low",
-        "title": "源码索引已生成 1 天",
+        "title": "源码索引已生成 2 天",
         "detail": "距上次 Repomix 打包越久，额外扣分越多（每天约 2 分，上限 20 分）。",
-        "points_lost": 2
+        "points_lost": 4
       },
       {
         "id": "dirty_tree",
@@ -63,16 +63,16 @@
         "id": "context_lineage",
         "severity": "info",
         "title": "Agent 上下文受源码索引牵连",
-        "detail": "架构上下文原始分 95/100，按规则不超过源码索引分数的 90%，现为 85/100。",
+        "detail": "架构上下文原始分 93/100，按规则不超过源码索引分数的 90%，现为 83/100。",
         "points_lost": 10
       },
       {
         "id": "overall_driver",
         "severity": "info",
         "title": "总分由 Agent 架构上下文决定",
-        "detail": "综合分取三层最低值：源码索引 93、Agent 上下文 85、人类文档 93。"
+        "detail": "综合分取三层最低值：源码索引 91、Agent 上下文 83、人类文档 91。"
       }
     ]
   },
-  "last_computed_at": "2026-06-15T08:26:51.209332+00:00"
+  "last_computed_at": "2026-06-16T02:53:03.919084+00:00"
 }

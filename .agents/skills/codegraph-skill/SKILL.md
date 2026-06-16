@@ -1,19 +1,33 @@
 ---
 name: codegraph-skill
 description: Use when a coding agent needs symbol relationships, callers, callees, or change impact. Guides Codegraph CLI usage (not MCP).
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Codegraph Skill
 
-[Codegraph](https://colbymchenry.github.io/codegraph/) provides a pre-indexed code graph for this project.
+[Codegraph](https://colbymchenry.github.io/codegraph/) provides a pre-indexed **AST code graph** for this project.
+
+MindMesh uses **CLI only** — do not run `codegraph install` (that configures MCP/agent rules separately).
 
 ## Prerequisites
 
-- Installed via `bun add -d @colbymchenry/codegraph`
-- Project indexed: `.codegraph/` (run `bunx codegraph init -i` if missing)
+```bash
+bunx codegraph status    # must succeed
+```
 
-## CLI commands (use `bunx codegraph …`)
+If not initialized:
+
+```bash
+bun add -d @colbymchenry/codegraph
+bunx codegraph init -i
+```
+
+Index lives in `.codegraph/` (regenerate with `bunx codegraph sync` after edits).
+
+## CLI commands
+
+Always run via `bunx codegraph …` (or `codegraph` on PATH):
 
 | Intent | Command |
 |--------|---------|
@@ -22,30 +36,37 @@ version: 1.0.0
 | What X calls | `bunx codegraph callees <symbol>` |
 | Change blast radius | `bunx codegraph impact <symbol>` |
 | Tests affected by file changes | `bunx codegraph affected <files…>` |
+| Project file tree | `bunx codegraph files` |
 | Index health | `bunx codegraph status` |
 | Refresh after edits | `bunx codegraph sync` |
 
-## When to use vs MindMesh knowledge
+## Recommended workflow
 
-| Use Codegraph | Use MindMesh `.mind-mesh/` |
-|---------------|---------------------------|
-| Symbol lookup, call chains | Architecture, modules, business rules |
-| Impact before refactor | Private domain knowledge |
-| File/symbol relationships | High-level flows and boundaries |
+1. Read `.mind-mesh/agent/context.md` (`mind-mesh-knowledge-skill`)
+2. `bunx codegraph query <SymbolName>` to locate definition
+3. `callers` / `callees` / `impact` for relationship questions
+4. `repomix-context-skill` for full source text of a specific file
+5. Use **`rtk-skill`** for any follow-up shell commands (tests, git)
 
-## Workflow
+## When to use vs other skills
 
-1. Load `mind-mesh-knowledge-skill` first for architectural context
-2. Use `codegraph query` to locate symbols
-3. Use `callers` / `callees` / `impact` for relationship questions
-4. Use `repomix-context-skill` for full source slices when needed
+| Use Codegraph | Use instead |
+|---------------|-------------|
+| Symbol lookup, call chains | Architecture → `context.md` |
+| Impact before refactor | Business rules → `knowledge/` |
+| File/symbol graph | Raw source slice → repomix |
+| Verbose test/git output | `rtk cargo test`, `rtk git diff` |
 
 ## Do not
 
-- Run `codegraph install` (configures MCP/agents — MindMesh manages AGENTS.md)
-- Re-verify Codegraph AST results with blind `grep` across the whole repo
-- Chain `query` + manual reads when `impact` or `explore` intent is clear
+- Run `codegraph install` (MindMesh manages AGENTS.md)
+- Blind `grep` the whole repo to re-verify Codegraph AST results
+- Chain `query` + manual file reads when `impact` answers the question
 
 ## Staleness
 
-If `codegraph status` reports pending files, run `bunx codegraph sync` before structural queries.
+If `codegraph status` shows pending files after your edits:
+
+```bash
+bunx codegraph sync
+```

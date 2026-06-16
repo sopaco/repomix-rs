@@ -1,8 +1,12 @@
 {
   "catalog_version": 1,
-  "integrated_at": "2026-06-14T02:54:14.395603+00:00",
+  "integrated_at": "2026-06-14T10:36:25.751560+00:00",
   "applied": [
+    "skill-mind-mesh-knowledge: → .agents/skills/mind-mesh-knowledge-skill",
+    "skill-repomix: → .agents/skills/repomix-context-skill",
     "skill-codegraph: → .agents/skills/codegraph-skill",
-    "skill-rtk: → .agents/skills/rtk-skill"
+    "skill-rtk: → .agents/skills/rtk-skill",
+    "agents-md: 已更新 /Users/bjsttlp485/Workspace/SAW/repomix-rs/AGENTS.md",
+    "gitignore-repomix: 已存在"
   ]
 }

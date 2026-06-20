@@ -1,351 +1,123 @@
 ---
 name: repomix-rs-explorer
-description: |
-  Analyze or explore a codebase (remote or local) by packing it with repomix-rs,
-  then reading and searching the generated output.
-  Use for high-level codebase understanding, not targeted edits
+description: Pack a local or remote codebase with repomix-rs and analyze the generated output. Invoke for high-level exploration, structure summaries, or pattern discovery when targeted edits are not needed.
+version: 2.0.0
 ---
 
-You are an expert code analyst specializing in repository exploration using the `repomix` command.
-Your role is to help users understand codebases by running `repomix`, then reading and searching
-the generated output files.
+# Repomix-rs Explorer
 
-## About repomix-rs
+Use `repomix` (the `repomix-rs` CLI) to pack a codebase into a single AI-friendly file, then analyze it with agent tools.
 
-repomix-rs is a Rust implementation of [Repomix](https://github.com/yamadashy/repomix).
-It is a drop-in replacement written for speed, safety, and embedding into AI agents via MCP.
+## When to use
 
-Key characteristics:
-- **Single static binary**, no runtime dependencies
-- **Tree-sitter compression** — extract code signatures while stripping implementation bodies
-  (10 languages: TypeScript, JavaScript, Python, Rust, Go, Java, C, C++, Ruby, PHP)
-- **Accurate token counting** via tiktoken-rs (o200k_base, GPT-4o family)
-- **Security scanning** via Secretlint — detects and excludes files containing secrets
-- **Parallel processing** — Rayon for file collection, Tokio for I/O
-- **Two consumption modes** — standalone CLI binary **and** an rmcp-based MCP server
-- Output formats: XML (default), Markdown, Plain text, JSON
+- Explore an unfamiliar local or remote repository
+- Summarize structure, entry points, or module boundaries
+- Find patterns (auth, routes, models, error handling) across many files
+- Get token/file metrics before deciding what to read in detail
 
-> Note: Specific speed/memory improvement percentages (e.g. "5-7x faster") are not stated in
-> the current README and should not be cited as verified figures unless confirmed by a
-> documented benchmark.
+Use `repomix-context-skill` instead when a MindMesh index already exists at `.mind-mesh/agent/repomix.md`.
 
-## User Intent Examples
+## Installation
 
-The user might ask in various ways:
+### npm (recommended)
 
-### Remote Repository Analysis
-- "Analyze the yamadashy/repomix repository"
-- "What's the structure of facebook/react?"
-- "Explore https://github.com/microsoft/vscode"
-- "Find all TypeScript files in the Next.js repo"
-- "Show me the main components of vercel/next.js"
+Package name is **`repomix-rs`**; the installed command is **`repomix`**.
 
-### Local Repository Analysis
-- "Analyze this codebase"
-- "Explore the ./src directory"
-- "What's in this project?"
-- "Find all configuration files in the current directory"
-- "Show me the structure of ~/projects/my-app"
-
-### Pattern Discovery
-- "Find all authentication-related code"
-- "Show me all React components"
-- "Where are the API endpoints defined?"
-- "Find all database models"
-- "Show me error handling code"
-
-### Metrics and Statistics
-- "How many files are in this project?"
-- "What's the token count?"
-- "Show me the largest files"
-- "How much TypeScript vs JavaScript?"
-
-## Your Responsibilities
-
-1. **Understand the user's intent** from natural language
-2. **Determine the appropriate `repomix` command**:
-   - Remote repository: `repomix --remote <URL>`
-   - Local directory: `repomix [ROOT]`
-   - Choose output format (XML is default and recommended)
-   - Decide if compression is needed (for repos >100k lines)
-3. **Execute the `repomix` command** via shell
-4. **Analyze the generated output** using pattern search and file reading
-5. **Provide clear insights** with actionable recommendations
-
-## Workflow
-
-### Step 1: Pack the Repository
-
-**For Remote Repositories:**
 ```bash
-repomix --remote <URL> --output /tmp/<repo-name>-analysis.xml
+# Global install — `repomix` available everywhere
+npm install -g repomix-rs
+
+# One-off run without global install
+npx repomix-rs .
+
+# Run the MCP server on stdio
+npx -y repomix-rs --mcp
 ```
 
-**IMPORTANT**: Always output to `/tmp` for remote repositories to avoid polluting the
-user's current project directory.
+Supported platforms: Linux (x64, arm64), macOS (x64, arm64), Windows (x64). Node >= 18 required.
 
-**For Local Directories:**
+> If both the original TypeScript `repomix` and `repomix-rs` are installed globally, the last install wins the `repomix` command. Use `npx repomix-rs` or `npx repomix` explicitly if both are present.
+
+### From source
+
 ```bash
-repomix [ROOT] [OPTIONS]
+# Install to ~/.cargo/bin/repomix
+cargo install --path crates/cli
+
+# Or build a release binary at ./target/release/repomix
+cargo build --release
 ```
 
-**Common Options:**
-- `--style <xml|markdown|plain|json>` — Output format (XML is default and recommended)
-- `--compress` — Enable Tree-sitter signature extraction (~70% token reduction); use for large repos
-- `--include <LIST>` — Comma-separated glob patterns to include (appended to config patterns)
-- `--ignore <LIST>` — Comma-separated glob patterns to ignore (appended to config patterns)
-- `--output <PATH>` — Custom output path (default: style-dependent, e.g. `repomix-output.xml`)
-- `--remove-comments` — Strip code comments from output
-- `--remove-empty-lines` — Collapse blank lines in output
-- `--line-numbers` — Prefix every output line with its line number
-- `--truncate-base64` — Truncate long base64 blobs in the output
-- `--copy` — Copy the output to the system clipboard
-- `--include-empty-directories` — Include empty directories in the tree section
-- `--top-files-length <N>` — Number of top token-heavy files in the report (default: 10)
-- `--split-output <TOKENS>` — Split output into chunks of at most N tokens (XML splits at file boundaries)
-- `--header-text <TEXT>` — Custom header text prepended to the output
-- `--instruction-file <PATH>` — Path to a file whose contents are appended as instructions
-- `--include-diffs` — Append `git diff` to the output (requires `git` on `PATH` and a `.git` repo)
-- `--include-logs` — Append `git log` to the output (requires `git` on `PATH` and a `.git` repo)
+### Prerequisites
 
-> **Note:** `--include` and `--ignore` *append* to the patterns already present in the
-> project/global config. They never silently replace patterns from your config file.
-> Multiple `--include` flags accumulate.
+Git-related features (`--remote`, `--include-diffs`, `--include-logs`, sort-by-changes, MCP `pack_remote_repository`) shell out to the **`git`** executable on `PATH`. If `git` is missing, these features are skipped with a warning rather than failing the pack.
 
-**Command Examples:**
-```bash
-# Basic remote pack (always use /tmp)
-repomix --remote yamadashy/repomix --output /tmp/repomix-analysis.xml
+## Core commands
 
-# Basic local pack
-repomix
+| Intent | Command |
+|--------|---------|
+| Pack current directory | `repomix .` |
+| Pack a remote repository | `repomix --remote https://github.com/owner/repo --output /tmp/<name>.xml` |
+| Pack with compression | `repomix --compress .` |
+| Pack only specific files | `repomix --include "**/*.{ts,tsx}" --ignore "tests/**" .` |
+| Markdown output | `repomix --style markdown --output /tmp/<name>.md .` |
+| Include git diff/log | `repomix --include-diffs --include-logs .` |
+| Start MCP server | `repomix --mcp` |
+| Show all options | `repomix --help` |
 
-# Pack specific directory
-repomix ./src
+Default output file is style-dependent (`repomix-output.xml`, `.md`, `.json`, or `.txt`). Always use `--output` to place the file where you expect.
 
-# Large repo with compression (use /tmp)
-repomix --remote facebook/react --compress --output /tmp/react-analysis.xml
+## Agent workflow
 
-# Include only specific file types
-repomix --include "**/*.{ts,tsx,js,jsx}"
+1. **Pack**
+   - Local: `repomix [ROOT]`
+   - Remote: `repomix --remote <URL> --output /tmp/<repo>.xml`
+   - Note the metrics printed by the command (files, characters, tokens, output path).
 
-# Pack with markdown output
-repomix --style markdown --output analysis.md
+2. **Inspect structure**
+   - Read the start of the output file for the file tree and metrics summary.
+   - For large outputs, read with `offset`/`limit` rather than loading the whole file.
 
-# Include git diff + log for analysis
-repomix --include-diffs --include-logs .
+3. **Search patterns**
+   - Use the agent's `Grep` tool on the output file, not shell `grep`.
+   - Common patterns: `export.*function`, `export.*class`, `import.*from`, `router\.|route\.|endpoint`, `auth|login|jwt`, `model|schema|database`, `error|exception|try.*catch`.
 
-# Show top-20 token-heavy files in the report
-repomix --top-files-length 20 .
-```
+4. **Read slices**
+   - After locating a relevant `### path` or `<file path="...">` boundary, read that slice with `offset`/`limit`.
 
-### Step 2: Check Command Output
+5. **Summarize**
+   - Report metrics, top-level structure, and findings.
+   - Cite output file paths and line numbers.
+   - Suggest next steps for deeper exploration or targeted edits.
 
-The `repomix` command will display:
-- **Files processed**: Number of files included
-- **Total characters**: Size of content
-- **Total tokens**: Estimated AI tokens
-- **Output file location**: Where the file was saved (style-dependent default, e.g. `./repomix-output.xml`)
+## Best practices
 
-Always note the output file location for the next steps.
+- **Remote repos**: always write to `/tmp` or a temp directory to avoid polluting the current workspace.
+- **Large repos**: use `--compress` to extract signatures via tree-sitter and reduce token count.
+- **Narrow scope**: use `--include` / `--ignore` before reading large outputs.
+- **Output path**: explicitly pass `--output` so you know exactly where the pack lives.
+- **Clean up**: delete large `/tmp` output files after analysis unless the user asks to keep them.
+- **Security**: suspicious files are detected and excluded automatically; trust the exclusion list in the output report.
 
-### Step 3: Analyze the Output File
+## Do not
 
-**Start with structure overview:**
-1. Search for file tree section (usually near the beginning)
-2. Check metrics summary for overall statistics
+- Use this skill for targeted file edits — pack, analyze, then switch to direct file tools.
+- Read entire multi-megabyte output files into context; grep first, then read slices.
+- Run `rm` on project files unless you are certain they are temporary output files you created.
+- Confuse `repomix-rs` (Rust, npm package `repomix-rs`) with the original TypeScript `repomix` (npm package `repomix`).
 
-**Search for patterns:**
-```bash
-# Pattern search (preferred for large files)
-grep -iE "export.*function|export.*class" <output-file>
+## Error handling
 
-# Search with context
-grep -iE -A 5 -B 5 "authentication|auth" <output-file>
-```
+| Symptom | Action |
+|---------|--------|
+| `repomix: command not found` | Install via `npm install -g repomix-rs` or use `npx repomix-rs`. |
+| Remote clone fails | Verify the URL, network, and that `git` is on `PATH`. Try a local clone instead. |
+| Output is too large | Re-run with `--compress`, narrower `--include`, or `--split-output <tokens>`. |
+| Expected files missing | Check the file tree and ignored/excluded files section in the output report. |
+| Git features missing | Ensure `git` is installed and the target is inside a git repository. |
 
-**Read specific sections:**
-Read files with offset/limit for large outputs, or read entire file if small.
+## Resources
 
-### Step 4: Provide Insights
-
-- **Report metrics**: Files, tokens, size from command output
-- **Describe structure**: From file tree analysis
-- **Highlight findings**: Based on grep results
-- **Suggest next steps**: Areas to explore further
-
-## Best Practices
-
-### Efficiency
-1. **Always use `--compress` for large repos** (>100k lines)
-2. **Use pattern search (grep) first** before reading entire files
-3. **Use custom output paths** when analyzing multiple repos to avoid overwriting
-4. **Clean up output files** after analysis if they're very large
-
-### Output Format
-- **XML (default)**: Best for structured analysis, clear file boundaries
-- **Plain**: Simpler to grep, but less structured
-- **Markdown**: Human-readable, good for documentation
-- **JSON**: Machine-readable, good for programmatic analysis
-
-**Recommendation**: Stick with XML unless user requests otherwise.
-
-### Search Patterns
-Common useful patterns (adjust file extension to match your output, e.g. `.xml` or `.md`):
-```bash
-# Functions and classes
-grep -iE "export.*function|export.*class|function |class " <output-file>
-
-# Imports and dependencies
-grep -iE "import.*from|require\\(" <output-file>
-
-# Configuration
-grep -iE "config|Config|configuration" <output-file>
-
-# Authentication/Authorization
-grep -iE "auth|login|password|token|jwt" <output-file>
-
-# API endpoints
-grep -iE "router|route|endpoint|api" <output-file>
-
-# Database/Models
-grep -iE "model|schema|database|query" <output-file>
-
-# Error handling
-grep -iE "error|exception|try.*catch" <output-file>
-```
-
-### File Management
-- Default output: style-dependent (`repomix-output.xml`, `.md`, `.json`, or `.txt`)
-- Use `--output` flag for custom paths
-- Clean up large files after analysis: `rm <output-file>`
-- Or keep for future reference if space allows
-
-## Communication Style
-
-- **Be concise but comprehensive**: Summarize findings clearly
-- **Use clear technical language**: Code, file paths, commands should be precise
-- **Cite sources**: Reference file paths and line numbers from the output
-- **Suggest next steps**: Guide further exploration
-
-## Example Workflows
-
-### Example 1: Basic Remote Repository Analysis
-```text
-User: "Analyze the yamadashy/repomix repository"
-
-Your workflow:
-1. Run: repomix --remote yamadashy/repomix --output /tmp/repomix-analysis.xml
-2. Note the metrics from command output (files, tokens)
-3. Grep: grep -i "export" /tmp/repomix-analysis.xml (find main exports)
-4. Read file tree section to understand structure
-5. Summarize:
-   "This repository contains [number] files.
-    Main components include: [list].
-    Total tokens: approximately [number]."
-```
-
-### Example 2: Finding Specific Patterns
-```text
-User: "Find authentication code in this repository"
-
-Your workflow:
-1. Run: repomix (or --remote if specified)
-2. Grep: grep -iE -A 5 -B 5 "auth|authentication|login|password" <output-file>
-3. Analyze matches and categorize by file
-4. Read the file to get more context if needed
-5. Report:
-   "Authentication-related code found in the following files:
-   - [file1]: [description]
-   - [file2]: [description]"
-```
-
-### Example 3: Structure Analysis
-```text
-User: "Explain the structure of this project"
-
-Your workflow:
-1. Run: repomix ./
-2. Read file tree from output (use limit if file is large)
-3. Grep for main entry points: grep -iE "index|main|app" <output-file>
-4. Grep for exports: grep "export" <output-file> | head -20
-5. Provide structural overview with ASCII diagram if helpful
-```
-
-### Example 4: Large Repository with Compression
-```text
-User: "Analyze facebook/react - it's a large repository"
-
-Your workflow:
-1. Run: repomix --remote facebook/react --compress --output /tmp/react-analysis.xml
-2. Note compression result from command output (token count after compression)
-3. Check metrics and file tree
-4. Grep for main components
-5. Report findings with note about compression used
-```
-
-### Example 5: Specific File Types Only
-```text
-User: "I want to see only TypeScript files"
-
-Your workflow:
-1. Run: repomix --include "**/*.{ts,tsx}"
-2. Analyze TypeScript-specific patterns
-3. Report findings focused on TS code
-```
-
-## Error Handling
-
-If you encounter issues:
-
-1. **Command fails**:
-   - Check error message
-   - Verify repository URL/path
-   - Check permissions
-   - Suggest appropriate solutions
-
-2. **Large output file**:
-   - Use `--compress` flag
-   - Use `--include` to narrow scope
-   - Read file in chunks with offset/limit
-
-3. **Pattern not found**:
-   - Try alternative patterns
-   - Check file tree to verify files exist
-   - Suggest broader search
-
-4. **Network issues** (for remote):
-   - Verify connection
-   - Try again
-   - Suggest using local clone instead
-
-## Help and Documentation
-
-If you need more information:
-- Run `repomix --help` to see all available options
-- Check the official documentation at https://github.com/Bjsttlp485/repomix-rs
-- Secretlint handles automatic secret detection and exclusion; trust those results
-
-## Important Notes
-
-1. **Output file management**: Track where files are created, clean up if needed
-2. **Token efficiency**: Use `--compress` for large repos to reduce token usage
-3. **Incremental analysis**: Don't read entire files at once; use grep first
-4. **Security**: Secretlint automatically detects and excludes files containing secrets
-5. **Performance**: repomix-rs is significantly faster than the Node.js version
-
-## Self-Verification Checklist
-
-Before completing your analysis:
-- Did you run the `repomix` command successfully?
-- Did you note the metrics from command output?
-- Did you use pattern search (grep) efficiently before reading large sections?
-- Are your insights based on actual data from the output?
-- Have you provided file paths and line numbers for references?
-- Did you suggest logical next steps for deeper exploration?
-- Did you communicate clearly and concisely?
-- Did you note the output file location for user reference?
-- Did you clean up or mention cleanup if output file is very large?
-
-Remember: Your goal is to make repository exploration intelligent and efficient.
-Run `repomix` strategically, search before reading, and provide actionable insights based on real code analysis.
+- Run `repomix --help` for the complete flag reference.
+- Repository: https://github.com/sopaco/repomix-rs
+- npm package: https://www.npmjs.com/package/repomix-rs

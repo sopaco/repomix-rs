@@ -3,9 +3,9 @@
  * Assemble and publish repomix-rs npm packages.
  *
  * Usage (node or bun):
- *   bun scripts/publish-npm.mjs platform --npm-suffix linux-x64 --binary ./repomix --version 2.0.0
- *   bun scripts/publish-npm.mjs main --version 2.0.0
- *   bun scripts/publish-npm.mjs main --version 2.0.0 --dry-run
+ *   bun scripts/publish-npm.mjs platform --npm-suffix linux-x64 --binary ./repomix --version 2.0.1
+ *   bun scripts/publish-npm.mjs main --version 2.0.1
+ *   bun scripts/publish-npm.mjs main --version 2.0.1 --dry-run
  */
 import { execSync, spawnSync } from 'node:child_process';
 import {

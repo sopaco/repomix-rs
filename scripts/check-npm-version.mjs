@@ -4,7 +4,7 @@
  *
  * Usage (node or bun):
  *   bun scripts/check-npm-version.mjs
- *   bun scripts/check-npm-version.mjs --expected 2.0.0
+ *   bun scripts/check-npm-version.mjs --expected 2.0.1
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';

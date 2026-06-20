@@ -1,6 +1,6 @@
 {
   "name": "repomix-rs",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Pack your codebase into an AI-friendly file (Rust implementation of Repomix)",
   "license": "MIT",
   "repository": {
@@ -30,10 +30,10 @@
     "node": ">=18"
   },
   "optionalDependencies": {
-    "repomix-rs-linux-x64": "2.0.0",
-    "repomix-rs-linux-arm64": "2.0.0",
-    "repomix-rs-darwin-x64": "2.0.0",
-    "repomix-rs-darwin-arm64": "2.0.0",
-    "repomix-rs-win32-x64": "2.0.0"
+    "repomix-rs-linux-x64": "2.0.1",
+    "repomix-rs-linux-arm64": "2.0.1",
+    "repomix-rs-darwin-x64": "2.0.1",
+    "repomix-rs-darwin-arm64": "2.0.1",
+    "repomix-rs-win32-x64": "2.0.1"
   }
 }

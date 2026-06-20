@@ -1249,7 +1249,7 @@ checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
 
 [[package]]
 name = "repomix-cli"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "anyhow",
  "arboard",
@@ -1272,7 +1272,7 @@ dependencies = [
 
 [[package]]
 name = "repomix-config"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "anyhow",
  "dirs",
@@ -1286,7 +1286,7 @@ dependencies = [
 
 [[package]]
 name = "repomix-core"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "anyhow",
  "arboard",
@@ -1329,7 +1329,7 @@ dependencies = [
 
 [[package]]
 name = "repomix-mcp"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "anyhow",
  "regex",
@@ -1345,7 +1345,7 @@ dependencies = [
 
 [[package]]
 name = "repomix-shared"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "anyhow",
  "arboard",

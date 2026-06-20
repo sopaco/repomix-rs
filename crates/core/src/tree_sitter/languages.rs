@@ -143,18 +143,73 @@ static LANGUAGE_REGISTRY: Lazy<HashMap<&'static str, LanguageConfig>> = Lazy::ne
         },
     );
 
-    // C#
-    // `tree-sitter-c-sharp` 0.23 的 language ABI version 是 15，
-    // 而 `queries/c_sharp.scm` 是按 ABI 13-14 编写的，暂时禁用 C# 压缩注册。
-    // 重新启用：取消下方注释 + 升级 queries/c_sharp.scm 到 ABI 15 语法。
-    /*
-    let csharp_lang: Language = tree_sitter_c_sharp::LANGUAGE.into();
-    map.insert("c_sharp", LanguageConfig {
-        compress_query: load_query(&csharp_lang, include_str!("queries/c_sharp.scm"), "c_sharp"),
-        language: csharp_lang,
-        extensions: vec!["cs"],
-    });
-    */
+    // Swift
+    let swift_lang: Language = tree_sitter_swift::LANGUAGE.into();
+    map.insert(
+        "swift",
+        LanguageConfig {
+            compress_query: load_query(
+                &swift_lang,
+                include_str!("queries/swift.scm"),
+                "swift",
+            ),
+            language: swift_lang,
+            extensions: vec!["swift"],
+        },
+    );
+
+    // Kotlin
+    let kotlin_lang: Language = tree_sitter_kotlin_ng::LANGUAGE.into();
+    map.insert(
+        "kotlin",
+        LanguageConfig {
+            compress_query: load_query(
+                &kotlin_lang,
+                include_str!("queries/kotlin.scm"),
+                "kotlin",
+            ),
+            language: kotlin_lang,
+            extensions: vec!["kt", "kts"],
+        },
+    );
+
+    // Dart
+    let dart_lang: Language = tree_sitter_dart_orchard::LANGUAGE.into();
+    map.insert(
+        "dart",
+        LanguageConfig {
+            compress_query: load_query(&dart_lang, include_str!("queries/dart.scm"), "dart"),
+            language: dart_lang,
+            extensions: vec!["dart"],
+        },
+    );
+
+    // Vue (SFC - uses JavaScript/TypeScript for script sections)
+    let vue_lang: Language = tree_sitter_vue_updated::language();
+    map.insert(
+        "vue",
+        LanguageConfig {
+            compress_query: load_query(&vue_lang, include_str!("queries/vue.scm"), "vue"),
+            language: vue_lang,
+            extensions: vec!["vue"],
+        },
+    );
+    // TODO: Find a compatible Vue parser or upgrade tree-sitter version
+
+    // Svelte (uses JavaScript/TypeScript for script sections)
+    let svelte_lang: Language = tree_sitter_svelte_ng::LANGUAGE.into();
+    map.insert(
+        "svelte",
+        LanguageConfig {
+            compress_query: load_query(
+                &svelte_lang,
+                include_str!("queries/svelte.scm"),
+                "svelte",
+            ),
+            language: svelte_lang,
+            extensions: vec!["svelte"],
+        },
+    );
 
     map
 });

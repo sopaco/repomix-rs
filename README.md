@@ -337,12 +337,11 @@ In addition to whatever you put in `ignore.custom_ignore` and your `.gitignore`,
 
 | Family | Languages |
 |---|---|
-| Web | JavaScript (`.js`, `.jsx`), TypeScript (`.ts`, `.tsx`) |
+| Web | JavaScript (`.js`, `.jsx`), TypeScript (`.ts`, `.tsx`), Vue (`.vue`), Svelte (`.svelte`) |
 | Systems | C (`.c`, `.h`), C++ (`.cpp`, `.cxx`, `.cc`, `.hpp`, `.hxx`), Rust (`.rs`), Go (`.go`) |
 | Scripting | Python (`.py`), Ruby (`.rb`), PHP (`.php`) |
 | Enterprise | Java (`.java`) |
-
-> **Note:** C# (`.cs`) compression is **temporarily disabled** in this version due to an ABI mismatch between `tree-sitter-c-sharp` 0.23 (language version 15) and the bundled query file. `.cs` files fall back to plain-text processing until the queries are upgraded.
+| Mobile | Swift (`.swift`), Kotlin (`.kt`, `.kts`), Dart (`.dart`) |
 
 ---
 

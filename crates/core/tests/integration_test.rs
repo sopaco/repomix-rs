@@ -450,27 +450,6 @@ async fn test_output_path_user_override_preserved_bug8() {
     let _ = fs::remove_dir_all(&tmpdir);
 }
 
-/// C# 暂不支持（tree-sitter-c-sharp 0.23 ABI 与 queries/c_sharp.scm 不兼容）。
-#[test]
-fn test_csharp_disabled_due_to_abi_mismatch_bug2() {
-    use repomix_core::tree_sitter::languages::get_supported_languages;
-    let langs = get_supported_languages();
-    assert!(
-        !langs.contains(&"c_sharp"),
-        "c_sharp should be disabled until queries/c_sharp.scm is upgraded to ABI 15. \
-         Found in: {:?}",
-        langs
-    );
-    // 同时验证 .cs 文件无法匹配到任何语言配置（将走纯文本路径）
-    use repomix_core::tree_sitter::languages::get_language_config;
-    use std::path::Path;
-    let config = get_language_config(Path::new("test.cs"));
-    assert!(
-        config.is_none(),
-        ".cs extension should not map to any LanguageConfig when c_sharp is disabled"
-    );
-}
-
 /// XML 输出须转义文件内容中的 XML 保留字符（`& < >`）。
 #[test]
 fn test_xml_output_escapes_file_content_bug4() {
